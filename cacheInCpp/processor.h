@@ -3,8 +3,8 @@
 
 #include <iostream>
 #include "global_def.h"
+#include "bus.h"
 #include "cache.h"
-
 
 // cache一致性模型对CPU是透明的, CPU只管read/write, 
 // hit与miss对于cpu而言, 
@@ -12,11 +12,11 @@
 class Processor
 {
     private:
-        unsigned int  regNum = 1;
+        unsigned int  regNum;
         unsigned int* regFile;
         Cache* cache;
     public:
-        Processor(int idx,int rNum,int bNum,unsigned char* mem,Bus*);
+        Processor(int idx,int rNum,int bNum,unsigned char* mem, CacheBus* b);
         ~Processor()
         {
             delete cache;
@@ -30,7 +30,7 @@ class Processor
         //print data value in one register
         void print(int regIdx);
 };
-Processor(int idx,int rNum,int bNum,unsigned char* mem,Bus*)
+Processor::Processor(int idx,int rNum,int bNum,unsigned char* mem,CacheBus* b)
 {
     regNum  = rNum;
     regFile = new unsigned int[regNum];
