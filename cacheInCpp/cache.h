@@ -4,41 +4,44 @@
 #include<iostream>
 #include<cassert>
 #include<thread>
+#include"global_def.h"
+class CacheBus;
+
 
 struct CacheBlock
 {
     status block_status;
-    unsigned address blockAddress;
+    unsigned short blockAddress;
     unsigned char block[BLOCKBYTE];
 };
+
 class Cache 
 {
-    friend class Bus;
-    private:
-        Bus* bus; // a bus, is a cacheIdx array and a message queue
+private:
+        CacheBus* bus; 
         unsigned char* mem;
         CacheBlock* blocks;
         int blockNum;
         int cacheIdx;
 
         void snoop();//receive message from bus
-        bool hit(unsigned short blockAddress, int cacheLine);
         void loadFromMemory(unsigned short blockAddress);
-    public:
-        Cache(Bus* bus,unsigned char* mem,int cidx, int bnum);
+public:
+        Cache(CacheBus* bus,unsigned char* mem,int cidx, int bnum);
         ~Cache(){
             delete blocks;
-            bus.setNull(cacheIdx);
+            bus->setNull(cacheIdx);
             //have to remove cache in bus's  cache list
         }//no need to delete bus, it is an outer device
-        void write_back(unsigned short blockAddress);
+        bool hit(unsigned short blockAddress);
+        void write_back(int cacheLine);
         void write(unsigned char data, unsigned short address);
-        int fetch(unsigned short address);
+        unsigned char fetch(unsigned short address);
         void set_status(unsigned short blockAddress,status s);
-        status getStatus(unsigned short blockAddress){return blocks[blockAddress%blockNum].block_status;}:w
+        status getStatus(unsigned short blockAddress){return blocks[blockAddress%blockNum].block_status;}
 
 };
-Cache::Cache(Bus* b,unsigned char* m, int cidx, int bnum)
+Cache::Cache(CacheBus* b,unsigned char* m, int cidx, int bnum)
 {
     cacheIdx = cidx;
     blockNum = bnum;
@@ -46,7 +49,7 @@ Cache::Cache(Bus* b,unsigned char* m, int cidx, int bnum)
     bus      = b;
     mem      = m;
     
-    bus.addCache(cacheIdx,this);
+    bus->addCache(cacheIdx,this);
 }
 bool Cache::hit(unsigned short blockAddress){
     int cacheLine = blockAddress % blockNum;
@@ -75,7 +78,7 @@ void Cache::write_back(int cacheLine)
     for(int i = 0; i < BLOCKBYTE; i++)
         mem[startAddress+i] = blocks[cacheLine].block[i];
 }
-void write(unsigned char data, unsigned short address)
+void Cache::write(unsigned char data, unsigned short address)
 {
     unsigned short blockAddress = getBlockAddress(address);
     unsigned short offset       = address % BLOCKBYTE;
@@ -84,7 +87,7 @@ void write(unsigned char data, unsigned short address)
     {
         case INVALID:
             blocks[cacheLine].block_status = WAITING;
-            bus.broadcast(cacheIdx,WRITE_MISS,blockAddress,INVALID);//putting message to msg queue
+            bus->broadcast(cacheIdx,WRITE_MISS,blockAddress,INVALID);//putting message to msg queue
             loadFromMemory(blockAddress);
             blocks[cacheLine].block[offset] = data;
             assert(blocks[cacheLine].block_status == MODIFIED);
@@ -98,7 +101,7 @@ void write(unsigned char data, unsigned short address)
             {
                 blocks[cacheLine].block_status = WAITING;
                 write_back(cacheLine);
-                bus.broadcast(cacheIdx,WRITE_MISS,blockAddress,MODIFIED);
+                bus->broadcast(cacheIdx,WRITE_MISS,blockAddress,MODIFIED);
                 loadFromMemory(blockAddress);
                 blocks[cacheLine].block[offset] = data;
             }
@@ -108,12 +111,12 @@ void write(unsigned char data, unsigned short address)
             {
                 blocks[cacheLine].block[offset] = data;
                 blocks[cacheLine].block_status  = MODIFIED;
-                bus.broadcast(cacheIdx,INVALID,blockAddress,SHARED);
+                bus->broadcast(cacheIdx,INVALIDATE,blockAddress,SHARED);
             }
             else //write miss
             {
                 blocks[cacheLine].block_status = WAITING;
-                bus.broadcast(cacheIdx,WRITE_MISS,blockAddress,SHARED);
+                bus->broadcast(cacheIdx,WRITE_MISS,blockAddress,SHARED);
                 loadFromMemory(blockAddress);
                 blocks[cacheLine].block[offset] = data;
             }
@@ -133,16 +136,16 @@ unsigned char  Cache::fetch(unsigned short address)
     {
         case INVALID:
             blocks[cacheLine].block_status = WAITING;
-            bus.broadcast(cacheIdx,READ_MISS,blockAddress,INVALID);//putting message to msg queue
+            bus->broadcast(cacheIdx,READ_MISS,blockAddress,INVALID);//putting message to msg queue
             loadFromMemory(blockAddress);
             break;
         case MODIFIED:
-            if(hit(blockAddress,cacheLine))//read hit
+            if(hit(blockAddress))//read hit
             {}
             else //read miss
             {
                 write_back(cacheLine);
-                bus.broadcast(cacheIdx,READ_MISS,blockAddress,INVALID);//putting message to msg queue
+                bus->broadcast(cacheIdx,READ_MISS,blockAddress,INVALID);//putting message to msg queue
                 loadFromMemory(blockAddress);
             }
             break;
@@ -151,7 +154,7 @@ unsigned char  Cache::fetch(unsigned short address)
             {}
             else
             {
-                bus.broadcast(cacheIdx,READ_MISS,blockAddress,SHARED);
+                bus->broadcast(cacheIdx,READ_MISS,blockAddress,SHARED);
                 loadFromMemory(blockAddress);
             }
             break;

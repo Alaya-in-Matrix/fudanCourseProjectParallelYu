@@ -42,6 +42,6 @@ enum status{
 enum broadCastMsg{
     WRITE_MISS ,
     READ_MISS,
-    INVALID
+    INVALIDATE
 };
 #endif
