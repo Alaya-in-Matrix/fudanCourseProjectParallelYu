@@ -1,6 +1,6 @@
 # parallel_Yu #
 * 吕文龙
-* Last Modified:2014/11/29 17:47:02 周六
+* Last Modified:2014/12/12 13:39:33 周五
 
 ## 1. project ##
 
@@ -25,3 +25,10 @@
 ## 预估需要时间 ##
 
 * hardware project:一周
+
+## Problem ##
+1. 同一时刻(时钟上升沿)两个处理器同时写同一地址, 似乎无论如何都无法避免竞争
+2. 是同一地址的竞争还是同一cache line的地址的竞争?
+3. 两个block在cache上是同一位置则如何?
+
+

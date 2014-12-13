@@ -1,2 +1,8 @@
-ref/
+*ref/
+*prj/
 *.swp
+*.exe
+*.o
+*.ppt
+*.pdf
+
