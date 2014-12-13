@@ -6,9 +6,6 @@
 #include "bus.h"
 #include "cache.h"
 
-// cache一致性模型对CPU是透明的, CPU只管read/write, 
-// hit与miss对于cpu而言, 
-// 只是stall时间长短而已
 class Processor
 {
     private:
@@ -28,6 +25,7 @@ class Processor
         void store(int regIdx,unsigned char address);
 
         //print data value in one register
+		void setReg(int regIdx,unsigned char value);
         void print(int regIdx);
 };
 Processor::Processor(int idx,int rNum,int bNum,unsigned char* mem,CacheBus* b)
@@ -37,6 +35,10 @@ Processor::Processor(int idx,int rNum,int bNum,unsigned char* mem,CacheBus* b)
     cache   = new Cache(b,mem,idx,bNum);
     for(int i=0; i<regNum;i++)
         regFile[i] = 0;
+}
+void Processor::setReg(int regIdx,unsigned char value)
+{
+	regFile[regIdx] = value;
 }
 void Processor::load(int regIdx,unsigned char address)
 {
