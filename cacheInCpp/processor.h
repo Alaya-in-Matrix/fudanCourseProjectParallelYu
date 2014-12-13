@@ -23,8 +23,12 @@ class Processor
             delete cache;
             delete regFile;
         }
+        //read data from memory
         void load(int regIdx,unsigned char address);
+        //write data to memory
         void store(int regIdx,unsigned char address);
+
+        //print data value in one register
         void print(int regIdx);
 };
 Processor::Processor()
