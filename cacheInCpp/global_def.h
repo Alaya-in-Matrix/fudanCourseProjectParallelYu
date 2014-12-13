@@ -3,10 +3,9 @@
 
 #include <cassert>
 
-#define ERROR_STATUS 0;
-
+#define CORENUM 2       //dual core 
 #define REGISTERNUM 32  //32 registers per processor
-#define REGISTERBIT 8   //8 bit per processor
+#define REGISTERBIT 8   //8 bit per register
 #define BLOCKBYTE 8     //8 byte per block
 #define CACHELINENUM 16 //cache size: 16blocks * 8b/block = 128B
 #define MEMSIZE 65536    //memory size 4KB
@@ -34,13 +33,15 @@ unsigned short getBlockAddress(unsigned short address)
     return address / fastExpr(BLOCKBYTE);
 }
 enum status{
-    MODIFIED = 0,
-    SHARED   = 1,
-    INVALID  = 2
+    ERROR_STATUS = 0,
+    MODIFIED = 1,
+    SHARED   = 2,
+    INVALID  = 3,
+    WAITING  = 4 //WAITING FOR BUS
 };
 enum broadCastMsg{
-    WRITE_MISS = 0,
+    WRITE_MISS ,
     READ_MISS,
-    INVALIDATE
+    INVALID
 };
 #endif

@@ -16,8 +16,7 @@ class Processor
         unsigned int* regFile;
         Cache* cache;
     public:
-        Processor();
-        Processor(int);
+        Processor(int idx,int rNum,int bNum,unsigned char* mem,Bus*);
         ~Processor()
         {
             delete cache;
@@ -31,18 +30,11 @@ class Processor
         //print data value in one register
         void print(int regIdx);
 };
-Processor::Processor()
-{
-    regFile = new unsigned int[regNum];
-    cache   = new Cache();
-    for(int i=0; i<regNum;i++)
-        regFile[i] = 0;
-}
-Processor::Processor(int rNum)
+Processor(int idx,int rNum,int bNum,unsigned char* mem,Bus*)
 {
     regNum  = rNum;
     regFile = new unsigned int[regNum];
-    cache   = new Cache();
+    cache   = new Cache(b,mem,idx,bNum);
     for(int i=0; i<regNum;i++)
         regFile[i] = 0;
 }
