@@ -16,16 +16,32 @@
  * block: 8word, 32*8=256bit/32byte
  */
 
-extern unsigned short getBlockAddress(unsigned short address);
+unsigned short fastExpr(unsigned char n)
+{
+    assert(n <= 16);
+    if(n == 0)
+        return 1;
+    else if(n == 1)
+        return 2;
+    else if(n % 2 == 0)
+        return 2 * fastExpr(n/2);
+    else 
+        return 2 * fastExpr(n-1);
+}
+unsigned short getBlockAddress(unsigned short address)
+{
+    return address / fastExpr(BLOCKBYTE);
+}
 enum status{
     ERROR_STATUS = 0,
     MODIFIED = 1,
     SHARED   = 2,
     INVALID  = 3,
+    WAITING  = 4 //WAITING FOR BUS
 };
 enum broadCastMsg{
     WRITE_MISS ,
     READ_MISS,
-    INVALIDATE
+    INVALID
 };
 #endif
