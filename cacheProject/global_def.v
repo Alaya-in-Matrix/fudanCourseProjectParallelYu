@@ -12,3 +12,11 @@
 `define WT 1'b1
 //memory access have 100 cycle delay
 `define MEM_ACCESS_DELAY 100 
+`define ACCESSING 0
+`define ACCESS_SUCCESS 1
+
+`define SNOOPMSGWIDTH 16
+
+`define MODIFIED 2'b00
+`define SHARED   2'b01
+`define INVALID  2'b10
