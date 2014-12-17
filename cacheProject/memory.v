@@ -7,7 +7,6 @@ input  [WORDSIZE-1:0]    dataInA,dataInB;
 output reg[WORDSIZE-1:0] dataOutA,dataOutB;
 
 // memeoy access hav a delay_cycle
-/* parameter delay_cycle = 100; */ 
 
 reg[WORDSIZE-1:0] mem[MEMSIZE-1:0];//main memory
 //race will occur if two cache want to access memory EXACTLY at same time
@@ -17,20 +16,38 @@ reg[WORDSIZE-1:0] mem[MEMSIZE-1:0];//main memory
 //but now, we just assume that two cache won't do mem-access at same time
 
 //behavior for cache1
+reg[7:0] delayCounterA = 0;
+reg[7:0] delayCounterB = 0;
+
+always @(rdwtA,addrA,dataInA)
+    delayCounterA <= MEM_ACCESS_DELAY;
+always @(rdwtB,addrB,dataInA)
+    delayCounterB <= MEM_ACCESS_DELAY;
+
 always @(posedge clk) begin
-    case(rdwtA)
-        RD: dataOutA   = mem[addrA];
-        WT: mem[addrA] = dataInA;
-        default: $display("error rdwtA");
-    endcase
+    if(delayCounterA > 0)
+        delayCounterA = delayCounterA - 1;
+    else 
+    begin
+        case(rdwtA)
+            RD: dataOutA   = mem[addrA];
+            WT: mem[addrA] = dataInA;
+            default: $display("error rdwtA");
+        endcase
+    end 
 end
 
 //behavior for cache2
 always @(posedge clk) begin
-    case(rdwtB)
-        RD: dataOutB   = mem[addrB];
-        WT: mem[addrB] = dataInB;
-        default: $display("error rdwtB");
-    endcase
+    if(delayCounterB > 0)
+        delayCounterB = delayCounterB - 1;
+    else 
+    begin
+        case(rdwtB)
+            RD: dataOutB   = mem[addrB];
+            WT: mem[addrB] = dataInB;
+            default: $display("error rdwtB");
+        endcase
+    end
 end
 endmodule

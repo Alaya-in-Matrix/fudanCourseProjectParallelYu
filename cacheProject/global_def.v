@@ -10,3 +10,5 @@
 // indicate whether a cache want to read or write memory
 `define RD 1'b0
 `define WT 1'b1
+//memory access have 100 cycle delay
+`define MEM_ACCESS_DELAY 100 
