@@ -34,14 +34,17 @@
 
 //snoop message
 `define SNOOPACTIONWIDTH 3 //0~7
-`define MSG_READMISS          4'h0 //one cache read miss
-`define MSG_WRITEMISS         4'h1 //one cache write miss
-`define MSG_INVALIDATE        4'h2 //cache receives this msg need to invalidate its block
-`define MSG_WRITEBACK_SUCCESS 4'h3 //one cache has successfully
-`define MSG_NOTHING           4'h4 //no message from bus
+`define MSG_READMISS          3'd0 //one cache read miss
+`define MSG_WRITEMISS         3'd1 //one cache write miss
+`define MSG_INVALIDATE        3'd2 //cache receives this msg need to invalidate its block
+`define MSG_WRITEBACK_SUCCESS 3'd3 //one cache has successfully
+`define MSG_READ_SUCCESS      3'd4
+`define MSG_NOTHING           3'd5 //no message from bus
 
-`define ERRWIDTH 2
-`define NOERR                2'b00
-`define CACHE_STATUS_ERR     2'b01
-`define CACHE_MEM_ACTION_ERR 2'b10
-`define BUS_ACTION_ERR       2'b11
+
+`define ERRWIDTH 3
+`define NOERR                3'd1
+`define CACHE_STATUS_ERR     3'd2
+`define CACHE_MEM_ACTION_ERR 3'd3
+`define BUS_ACTION_ERR       3'd4
+`define MEM_ERR              3'd5

@@ -45,8 +45,13 @@ reg[BLOCKADDRBIT-1:0]       blockAddr[CACHELINENUM-1:0];
 reg[BLOCKBYTE*WORDSIZE-1:0] cacheLine[CACHELINENUM-1:0];
 
 wire busIdx = snoopInAddr % CACHELINENUM;
-wire cpuIdx = cpuAddr     % CACHELINENUM;
-wire memIdx = memAddr     % CACHELINENUM;
+wire cpuIdx = cpuAddr[(ADDRESSBIT-1):BLOCKADDRBIT] % CACHELINENUM;
+wire memIdx = memAddr % CACHELINENUM;
+
+wire [1:0] hitmiss;
+wire [OFFSETADDRBIT-1:0] offset = cpuAddr[0+:OFFSETADDRBIT];
+assign hitmiss[1] = (cpuRW == RD ? 1'b0 : 1'b1);
+assign hitmiss[0] = (cpuAddr[(ADDRESSBIT-1)-:BLOCKADDRBIT] == blockAddr[cpuIdx] ? 1'b0 : 1'b1);
 
 integer i;
 reg stall;//to break the execution
@@ -80,12 +85,29 @@ always @(posedge clk) begin
                                     default:
                                         stall = 1;
                                 endcase
+                                snoopOutAction = I_HAVE_DATA;
+                                snoopOutAddr   = blockAddr[i];
+                                snoopOutValue  = cacheLine[i];
+                            end 
+                            I_HAVE_DATA: begin 
+                                cacheLine[i] = snoopInValue;
+                                currMemAction[i] = NOIO;
+                                nextMemAction[i] = NOIO;
                             end 
                             default: 
                                 errFlag = BUS_ACTION_ERR;
                         endcase
                     end 
                     if(stall==0 && cpuIdx == i) begin // have cpu request for this cache block
+                        case(hitmiss)
+                            READHIT: 
+                                cpuDataOut = cacheLine[i][(offset)+:WORDSIZE];
+                            WRITEHIT: 
+                                cacheLine[i][(offset)+:WORDSIZE] = cpuDataOut;
+                            READMISS: 
+
+                            WRITEMISS:
+                        endcase
                     end 
                 end 
                 SHARED: begin 
