@@ -1,140 +1,114 @@
-`include global_def.v
-
-`define CACHE_MEM_ACTION_WIDTH 2
-
-`define NOIO           2'o0
-`define WRITING        2'o1
-`define READING        2'o2
-`define READY_TO_READ  2'o3
-
+`define global_def.v 
 module cache(
-    clk,reset,errFlag;
+    clk,reset,busAvailable,releaseBus,readEnable,
     cpuRW,cpuAddr,cpuDataIn,cpuDataOut,cpuSuccess,
-    memRW,memAddr,memDataOut,memDataIn,memSuccess,
     snoopInAction,snoopInAddr,snoopInValue,
-    snoopOutAction,snoopOutAddr,snoopOutValue);
+    snoopOutAction,snoopOutAddr,snoopOutValue)
 
-input clk,reset;
-
-//interact with cpu
+input clk,reset,busAvailable;
 input cpuRW;
-output reg[ERRWIDTH-1:0] errFlag;
-input wire[ADDRESSBIT-1:0] cpuAddr;
-input wire[WORDSIZE-1:0]   cpuDataIn;
-output reg[WORDSIZE-1:0]   cpuDataOut;
-output reg                 cpuSuccess;   //tell cpu whether it need to stall
+input [ADDRESSBIT-1:0]         cpuAddr;
+input [WORDSIZE-1:0]           cpuDataIn;
+input [3:0]                    snoopInAction;
+input [BLOCKADDRBIT-1:0]       snoopInAddr;
+input [BLOCKBYTE*WORDSIZE-1:0] snoopInValue;
 
-//interact with memory
-output reg memRW;
-output reg [BLOCKADDRBIT-1:0]       memBlockAddr;
-output reg [WORDSIZE*BLOCKBYTE-1:0] memDataOut;
-input wire [WORDSIZE*BLOCKBYTE-1:0] memDataIn;
-input wire memAvailable; 
+output releaseBus,readEnable;
+output reg[WORDSIZE-1:0]           cpuDataOut;
+output reg[3:0]                    snoopOutAction;
+output reg[BLOCKADDRBIT-1]         snoopOutAddr;
+output reg[BLOCKBYTE*WORDSIZE-1:0] snoopOutValue
 
-//interact with the other cache 
-input wire[3:0] snoopInAction;
-output reg[3:0] snoopOutAction;
-input wire[BLOCKADDRBIT-1:0] snoopInAddr;
-output reg[BLOCKADDRBIT-1:0] snoopOutAddr;
+reg [STATUSWIDTH-1:0]        status[CACHELINENUM-1:0];
+reg [STATUSWIDTH:0]          statusAfterIO[CACHELINENUM-1:0];
+reg [BLOCKADDRBIT-1:0]       blockAddr[CACHELINENUM-1:0];
+reg [BLOCKBYTE*WORDSIZE-1:0] cacheLine[CACHELINENUM-1:0];
 
-//simple direct map cache  
-reg[1:0] status[CACHELINENUM-1:0];
-reg[CACHE_MEM_ACTION_WIDTH-1:0] currMemAction[CACHELINENUM-1:0];// record what IO action was performed
-reg[CACHE_MEM_ACTION_WIDTH-1:0] nextMemAction[CACHELINENUM-1:0];
-reg[BLOCKADDRBIT-1:0]       blockAddr[CACHELINENUM-1:0];
-reg[BLOCKBYTE*WORDSIZE-1:0] cacheLine[CACHELINENUM-1:0];
 
-wire busIdx = snoopInAddr % CACHELINENUM;
-wire cpuIdx = cpuAddr[(ADDRESSBIT-1):BLOCKADDRBIT] % CACHELINENUM;
-wire memIdx = memAddr % CACHELINENUM;
+wire cpuBlockAddr = cpuAddr[(ADDRESSBIT-1)-:BLOCKADDRBIT];
+wire offset       = cpuAddr[0+:OFFSETADDRBIT];
+
+wire BusIdx = snoopInAddrC % CACHELINENUM;
+wire cpuIdx = cpuBlockAddr % CACHELINENUM;
 
 wire [1:0] hitmiss;
-wire [OFFSETADDRBIT-1:0] offset = cpuAddr[0+:OFFSETADDRBIT];
 assign hitmiss[1] = (cpuRW == RD ? 1'b0 : 1'b1);
-assign hitmiss[0] = (cpuAddr[(ADDRESSBIT-1)-:BLOCKADDRBIT] == blockAddr[cpuIdx] ? 1'b0 : 1'b1);
+assign hitmiss[0] = ((cpuBlockAddr == blockAddr[cpuIdx]) && status[cpuIdx]!=INVALID ? 1'b0 : 1'b1);
+
 
 integer i;
-reg stall;//to break the execution
-always @(posedge clk) begin
-    if(reset) begin
-        //initialize
-        for(i=0; i<CACHELINENUM; i=i+1) begin
-            blockAddr[i]     <= 0;
-            cacheLine[i]     <= 0;
-            status[i]        <= INVALID;
-            prevMemAction[i] <= NOIO; 
-        end 
-        snoopOutAction <= MSG_NOTHING;
-        snoopOutAddr   <= 0;
-        snoopOutValue  <= 0;
-        errFlag        <= NOERR;
-    end
-    else if(errFlag == NOERR) begin 
-        for(i=0;i<CACHELINENUM; i=i+1) begin 
-            case(status[i]) 
-                MODIFIED: begin
-                    if(snoopInAddr == blockAddr[i] && snoopInAction != MSG_NOTHING) begin 
-                        case(snoopInAction) 
-                            MSG_READMISS,MSG_WRITEMISS: begin 
-                                case (currMemAction[i])
-                                    NOIO,READY_TO_READ: begin 
-                                        memRW = WT;
-                                        memAddr = blockAddr[i];
-                                        stall = 1;
-                                        status[i] = (snoopInAction == MSG_WRITEMISS ? INVALID : SHARED);
-                                    default:
-                                        stall = 1;
-                                endcase
-                                snoopOutAction = I_HAVE_DATA;
-                                snoopOutAddr   = blockAddr[i];
-                                snoopOutValue  = cacheLine[i];
-                            end 
-                            I_HAVE_DATA: begin 
-                                cacheLine[i] = snoopInValue;
-                                currMemAction[i] = NOIO;
-                                nextMemAction[i] = NOIO;
-                            end 
-                            default: 
-                                errFlag = BUS_ACTION_ERR;
-                        endcase
+always @(posedge) begin 
+    if(reset) begin 
+        //TODO  reset 
+    end 
+    else begin 
+        for(i = 0; i < CACHELINENUM; i++) begin 
+            case(status[i])
+                RD_STALLING: begin 
+                    if(busAvailable) begin //IO has finished
+                        status[i]    = statusAfterIO[i];
+                        cacheLine[i] = snoopInValue;
+                        blockAddr[i] = snoopInAddr;//需不需要为bus和snoop分别设置一个总线?
+                        if(snoopInAddr % CACHELINENUM != i)
+                            $display("error snoopInAddr");
                     end 
-                    if(stall==0 && cpuIdx == i) begin // have cpu request for this cache block
-                        case(hitmiss)
-                            READHIT: 
-                                cpuDataOut = cacheLine[i][(offset)+:WORDSIZE];
-                            WRITEHIT: 
-                                cacheLine[i][(offset)+:WORDSIZE] = cpuDataOut;
-                            READMISS: 
-
-                            WRITEMISS:
-                        endcase
+                    else begin status[i] = status[i]; end //wait for IO to finish
+                end 
+                WB_STALLING: begin 
+                    if(busAvailable)  //IO has finished
+                        status[i] = statusAfterIO[i];
+                end 
+                REP_STALLING: begin 
+                end 
+                MODIFIED: begin 
+                    if(snoopInAddr == blockAddr[i] && snoopInAction != MSG_NOTHING) begin //have msg
+                        if(snoopInAction == MSG_WRITEMISS) begin 
+                            if(busAvailable) begin 
+                                status[i]        = WB_STALLING;
+                                statusAfterIO[i] = INVALID;
+                                snoopOutAction   = WRITEBACK;
+                                snoopOutAddr     = blockAddr[i];
+                                snoopOutValue    = cacheLine[i]; 
+                            end 
+                        end 
+                        else if(snoopInAction == MSG_READMISS) begin 
+                            if(busAvailable) begin 
+                                status[i]        = WB_STALLING;
+                                statusAfterIO[i] = SHARED;
+                                snoopOutAction   = WRITEBACK;
+                                snoopOutAddr     = blockAddr[i];
+                                snoopOutValue    = cacheLine[i];
+                            end 
+                        end 
+                        else 
+                            $display("errorSnoopInAction");
+                    end 
+                    else if(cpuBlockAddr == blockAddr) begin 
+                        if(hitmiss == READHIT) 
+                            cpuDataOut = cacheLine[i][offset+:WORDSIZE];
+                        else if(hitmiss == WRITEHIT)
+                            cacheLine[i][offset+:WORDSIZE] = cpuDataIn;
+                        else if(hitmiss == READMISS) begin 
+                            status[i] = REP_STALLING;
+                            statusAfterIO[i] = SHARED;
+                        end 
                     end 
                 end 
                 SHARED: begin 
+                    if(snoopInAddr == blockAddr[i] && snoopInAction != MSG_NOTHING) begin //have msg
+                    end 
+                    else if(cpuBlockAddr == blockAddr) begin 
+                    end 
                 end 
                 INVALID: begin 
+                    if(snoopInAddr == blockAddr[i] && snoopInAction != MSG_NOTHING) begin //have msg
+                    end 
+                    else if(cpuBlockAddr == blockAddr) begin 
+                    end 
                 end 
-                default: $display("error status:%d",status[i]);
             endcase
         end 
     end 
-    else 
-        errFlag = errFlag;
 end 
-
-//do memory IO
-always @(posedge memAvailable) begin 
-    if(memAvailable && currMemAction[memIdx]==READING) begin
-        cacheLine[memIdx] = memDataIn;
-        blockAddr[memIdx] = memAddr;
-        status[memIdx]    = SHARED;
-        currMemAction[memIdx] = nextMemAction[memIdx];
-        nextMemAction[memIdx] = NOIO;
-    end
-    else if(memAvailable && currMemAction[memIdx] == WRITING) begin 
-        currMemAction[memIdx] = nextMemAction[memIdx];
-        nextMemAction[memIdx] = NOIO;
-    end
-end
 endmodule
-
+endmodule
