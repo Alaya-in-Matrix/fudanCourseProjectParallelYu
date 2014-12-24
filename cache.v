@@ -11,13 +11,13 @@
 `define M_WM_RD    4'd6 //modified, cpu write miss, finished writing back, need to read
 `define M_RM_RD    4'd7
 `define SHARED     4'd8
-`define S_SWM_INV  4'd9 //shared, snooped write miss, invalidate
-`define S_SINV_INV 4'd10 //shared, snooped invalidate, invalidate
-`define S_RM_RD    4'd11 //shared, cpu read miss, reading mem
-`define S_WM_RD    4'd12 //shared, cpu write miss, need to read
-`define INVALID    4'd13
-`define I_RM_RD    4'd14 //invalid, cpu read miss, read mem
-`define I_WM_RD    4'd15 //invalid, cpu write miss, read mem
+/* `define S_SWM_INV  4'd9 //shared, snooped write miss, invalidate */
+/* `define S_SINV_INV 4'd10 //shared, snooped invalidate, invalidate */
+`define S_RM_RD    4'd9//shared, cpu read miss, reading mem
+`define S_WM_RD    4'd10 //shared, cpu write miss, need to read
+`define INVALID    4'd11
+`define I_RM_RD    4'd12 //invalid, cpu read miss, read mem
+`define I_WM_RD    4'd13 //invalid, cpu write miss, read mem
 
 `define IOSTATEWIDTH 2
 `define RD   2'd0
@@ -25,8 +25,9 @@
 `define IDEL 2'd2
 
 
-`define ERRWIDTH     4
-`define ERR_UNKNOWN 4'd0;
+`define ERRWIDTH          4
+`define ERR_UNKNOWN       4'd0;
+`define ERR_ADDR_MISMATCH 4'd1
 
 //只有allowRead才能进入需要read的状态.
 //也许write enable没什么用?
@@ -86,15 +87,16 @@ wire snoopRm  = (addrFromCache == addr) && rmFromCache;
 wire snoopWM  = (addrFromCache == addr) && wmFromCache;
 wire snoopInv = (addrFromCache == addr) && invFromCache;
 
-reg allowRead;
+/* reg allowRead; */
 
-always @(allowReadFromCache) begin
-    //应该保证 allowreadfromcache
-    //和 allowreadtocache 不会同时跳变
-    if(allowReadFromCache)
-        allowRead = allowReadFromCache;
-end
+/* always @(allowReadFromCache) begin */
+/*     //应该保证 allowreadfromcache */
+/*     //和 allowreadtocache 不会同时跳变 */
+/*     if(allowReadFromCache) */
+/*         allowRead = allowReadFromCache; */
+/* end */
 
+//或许
 always @(reset,rwFromCPU,addrFromCache,dataFromCPU,addrFromMem,dataFromMem,readEnFromMem,writeEnFromMem,allowReadFromCache,addrFromCache,rmFromCache,wmFromCache, invFromCache) begin 
     //这样的初始化方式是不是有问题?
     //有些需要保持的量因为无关的输入变化而无法保持?
@@ -106,6 +108,7 @@ always @(reset,rwFromCPU,addrFromCache,dataFromCPU,addrFromMem,dataFromMem,readE
     wmToCache          = 0;
     invToCache         = 0;
     havMsgToCache      = 0;
+    nextState          = state;
     if(reset) begin 
     end
     else begin 
@@ -140,7 +143,7 @@ always @(reset,rwFromCPU,addrFromCache,dataFromCPU,addrFromMem,dataFromMem,readE
                     dataToMem     = cacheLine
                     havMsgToCache = 1;
                     rmToCache     = 1;
-                    addrToCache   = addr;
+                    addrToCache   = addrFromCPU;
                     nextState     = M_RM_WB;
                 end 
                 else if(wm) begin 
@@ -149,7 +152,7 @@ always @(reset,rwFromCPU,addrFromCache,dataFromCPU,addrFromMem,dataFromMem,readE
                     dataToMem     = cacheLine;
                     havMsgToCache = 1;
                     wmToCache     = 1;
-                    addrToMem     = addr;
+                    addrToCache   = addrFromCPU;
                     nextState     = M_WM_WB;
                 end 
                 else if(idel) begin 
@@ -205,20 +208,34 @@ always @(reset,rwFromCPU,addrFromCache,dataFromCPU,addrFromMem,dataFromMem,readE
             end
             M_WM_RD: begin 
                 if(readEnFromMem) begin //read enable
-                    rwToMem   = IDEL;
-                    cacheLine = dataFromMem;
-                    addr      = addrFromMem;
-                    cacheLine = dataFromCPU;
-                    nextState = MODIFIED;
+                    if(addrFromCPU == addrFromMem) begin 
+                        rwToMem   = IDEL;
+                        cacheLine = dataFromMem;
+                        addr      = addrFromMem;
+                        cacheLine = dataFromCPU;
+                        nextState = MODIFIED;
+                    end 
+                    else begin 
+                        nextState = ERROR;
+                        errReg    = ERR_ADDR_MISMATCH;
+                    end
                 end
                 else nextState = M_WM_RD;
             end
             M_RM_RD: begin 
                 if(readEnFromMem) begin //read enable
-                    rwToMem   = IDEL;
-                    cacheLine = dataFromMem;
-                    addr      = addrFromMem;
-                    nextState = SHARED;
+                    if(addrFromCPU == addrToMem) begin
+                        rwToMem   = IDEL;
+                        cacheLine = dataFromMem;
+                        addr      = addrFromMem;
+                        nextState = SHARED;
+                        readEnToCPU = 1;
+                        dataToCPU = cacheLine;
+                    end 
+                    else begin 
+                        nextState = ERROR;
+                        errReg    = ERR_ADDR_MISMATCH;
+                    end 
                 end
                 else nextState = M_RM_RD;
             end 
@@ -229,6 +246,9 @@ always @(reset,rwFromCPU,addrFromCache,dataFromCPU,addrFromMem,dataFromMem,readE
                 else if(snoopWM) begin
                     nextState = INVALID;
                 end
+                else if(snoopInv) begin 
+                    nextState = INVALID;
+                end 
                 else if(rh) begin 
                     readEnToCPU = 1;
                     dataToCPU   = cacheLine;
@@ -241,22 +261,30 @@ always @(reset,rwFromCPU,addrFromCache,dataFromCPU,addrFromMem,dataFromMem,readE
                 end 
                 else if(rm) begin 
                     //mem,bus,state
-                    memRW         = WT;
-                    addrToMem     = addr;
-                    dataToMem     = cacheLine
                     havMsgToCache = 1;
-                    rmToCache     = 1;
-                    addrToCache   = addr;
-                    nextState     = S_RM_RD;
+                    rmToCache     = 1; //broad cast read miss
+                    addrToCache   = addrFromCPU;
+                    if(allowReadFromCache) begin 
+                        memRW         = RD;
+                        addrToMem     = addrFromCPU;
+                        nextState     = S_RM_RD;
+                    end
+                    else begin 
+                        nextState = SHARED; 
+                    end
                 end 
                 else if(wm) begin 
-                    memRW         = WT;
-                    addrToMem     = addr;
-                    dataToMem     = cacheLine;
                     havMsgToCache = 1;
                     wmToCache     = 1;
-                    addrToMem     = addr;
-                    nextState     = S_WM_RD;
+                    addrToCache   = addrFromCPU;
+                    if(allowReadFromCache) begin 
+                        memRW     = RD;
+                        addrToMem = addrFromCPU;
+                        nextState = S_WM_RD;
+                    end 
+                    else begin 
+                        nextState = SHARED; 
+                    end
                 end 
                 else if(idel) begin 
                     nextState = SHARED;
@@ -266,29 +294,115 @@ always @(reset,rwFromCPU,addrFromCache,dataFromCPU,addrFromMem,dataFromMem,readE
                     nextState = ERROR;
                 end
             end
+            S_RM_RD: begin 
+                if(readEnFromMem) begin //read enable
+                    if(addrFromMem == addrFromCPU) begin 
+                        rwToMem     = IDEL;
+                        cacheLine   = dataFromMem;
+                        addr        = addrFromMem;
+                        cacheLine   = dataFromCPU;
+                        nextState   = SHARED;
+                        readEnToCPU = 1;
+                        dataToCPU   = cacheLine;
+                    end 
+                    else begin 
+                        nextState = ERROR;
+                        errReg    = ERR_ADDR_MISMATCH;
+                    end 
+                end
+                else nextState = S_RM_RD;
+            end
+            S_WM_RD: begin 
+                if(readEnFromMem) begin //read enable
+                    if(addrFromCPU == addrFromMem) begin 
+                        rwToMem     = IDEL;
+                        cacheLine   = dataFromMem;
+                        addr        = addrFromMem;
+                        cacheLine   = dataFromCPU;
+                        nextState   = MODIFIED;
+                    end 
+                    else begin 
+                        nextState = ERROR;
+                        errReg = ERR_ADDR_MISMATCH;
+                    end
+                end
+                else nextState = S_WM_RD;
+            end
+            INVALID: begin 
+                if(rm) begin 
+                    //broadcast readmiss
+                    havMsgToCache = 1;
+                    addrToCache   = addrFromCPU;
+                    rmToCache     = 1;
+                    if(allowReadFromCache) begin 
+                        rwToMem   = RD;
+                        addrToMem = addrFromCPU;
+                        nextState = I_RM_RD;
+                    end 
+                    else begin 
+                        nextState = INVALID;
+                    end
+                end 
+                else if(wm) begin 
+                    havMsgToCache = 1;
+                    addrToCache   = addrFromCPU;
+                    wmToCache     = 1;
+                    if(allowReadFromCache) begin 
+                        rwToMem = RD;
+                        addrToMem = addrFromCPU;
+                        nextState = I_WM_RD;
+                    end 
+                    else begin 
+                        nextState = INVALID;
+                    end 
+                end 
+                else if(idel) begin 
+                    nextState = INVALID;
+                end 
+                else begin 
+                    nextState = ERROR;
+                    errReg    = ERR_UNKNOWN;
+                end 
+            end
+            I_RM_RD: begin  //equal to I_RM_RD
+                if(readEnFromMem) begin //read enable
+                    if(addrFromMem == addrFromCPU) begin 
+                        rwToMem     = IDEL;
+                        cacheLine   = dataFromMem;
+                        addr        = addrFromMem;
+                        cacheLine   = dataFromCPU;
+                        nextState   = SHARED;
+                        readEnToCPU = 1;
+                        dataToCPU   = cacheLine;
+                    end 
+                    else begin 
+                        nextState = ERROR;
+                        errReg    = ERR_ADDR_MISMATCH;
+                    end 
+                end
+                else nextState = I_RM_RD;
+            end 
+            I_WM_RD: begin 
+                if(readEnFromMem) begin //read enable
+                    if(addrFromCPU == addrFromMem) begin 
+                        rwToMem     = IDEL;
+                        cacheLine   = dataFromMem;
+                        addr        = addrFromMem;
+                        cacheLine   = dataFromCPU;
+                        nextState   = MODIFIED;
+                    end 
+                    else begin 
+                        nextState = ERROR;
+                        errReg    = ERR_ADDR_MISMATCH;
+                    end
+                end
+                else nextState = I_WM_RD;
+            end
             default: 
                 nextState = ERROR;
-                /* `define ERROR      4'd0 //(done) */
-                /* `define MODIFIED   4'd1 //(done) */
-                /* `define M_SRM_WB   4'd2 (done)
-                /* `define M_SWM_WB   4'd3 (done)
-                /* `define M_WM_WB    4'd4 (done)
-                /* `define M_RM_WB    4'd5 (done)
-                /* `define M_WM_RD    4'd6 (done)
-                /* `define M_RM_RD    4'd7 (done)
-                /* `define SHARED     4'd8 
-                /* `define S_SWM_INV  4'd9 
-                /* `define S_SINV_INV 4'd10 //shared, snooped invalidate, invalidate */
-                /* `define S_RM_RD    4'd11 //shared, cpu read miss, reading mem */
-                /* `define S_WM_RD    4'd12 //shared, cpu write miss, need to read */
-                /* `define INVALID    4'd13 */
-                /* `define I_RM_RD    4'd14 //invalid, cpu read miss, read mem */
-                /* `define I_WM_RD    4'd15 //invalid, cpu write miss, read mem */
         endcase
     end
 end
-
-
 //时序逻辑
 always @(posedge clk) begin 
     state <= nextState;
