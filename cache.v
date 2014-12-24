@@ -1,252 +1,296 @@
 `define ADDRWIDTH 16
 `define WORDWIDTH 16
 
-`define STATEWIDTH      3
-`define MODIFIED        3'd0 //done
-`define SHARED          3'd1 //done
-`define INVALID         3'd2
-/* `define WAITINV         3'd3 //state is to be set as modified, but have to wait until the other have invalidate its copy */
-`define WRITING         3'd4
-`define READING         3'd5
-`define WAITINGWBTOREAD 3'd6
-`define ERROR           3'd7
+`define STATEWIDTH 4
+`define ERROR      4'd0 //(done)
+`define MODIFIED   4'd1 //(done)
+`define M_SRM_WB   4'd2 //modified, snooped read miss,writing back
+`define M_SWM_WB   4'd3 //modified, snooped write miss, writing back
+`define M_WM_WB    4'd4 //modified, cpu write miss, writing back
+`define M_RM_WB    4'd5 
+`define M_WM_RD    4'd6 //modified, cpu write miss, finished writing back, need to read
+`define M_RM_RD    4'd7
+`define SHARED     4'd8
+`define S_SWM_INV  4'd9 //shared, snooped write miss, invalidate
+`define S_SINV_INV 4'd10 //shared, snooped invalidate, invalidate
+`define S_RM_RD    4'd11 //shared, cpu read miss, reading mem
+`define S_WM_RD    4'd12 //shared, cpu write miss, need to read
+`define INVALID    4'd13
+`define I_RM_RD    4'd14 //invalid, cpu read miss, read mem
+`define I_WM_RD    4'd15 //invalid, cpu write miss, read mem
 
 `define IOSTATEWIDTH 2
-`define RD   2'd0 //read
-`define WT   2'd1 //write
-`define IDEL 2'd2 //no io
+`define RD   2'd0
+`define WT   2'd1
+`define IDEL 2'd2
+
 
 `define ERRWIDTH     4
-`define ERR_SNOOPMSG 4'd0
-`define ERR_HITMIT   4'd1
+`define ERR_UNKNOWN 4'd0;
+
+//只有allowRead才能进入需要read的状态.
+//也许write enable没什么用?
+//非error/m/s/i的状态, 只能有一个出口.
 module cache(
     input clk,
     input reset,
-    //interact with cpu
-    input [IOSTATEWIDTH-1:0] cpuRW,
-    input [ADDRWIDTH-1:0]    addrFromCPU,
-    input [WORDWIDTH-1:0]    dataFromCPU,
-    //interact with mem(bus)
-    input [ADDRWIDTH-1:0] addrFromMem,
-    input [WORDWIDTH-1:0] dataFromMem,
-    input memReadEn,
-    input memWriteDone,
-    //snoop input and output
-    input [ADDRWIDTH-1:0] addrFromCache,
-    input inReadM,
-    input inWriteM,
-    input inInv,
-    input inWbDone,
-    input inInvDone,
-    input inHavMsg,
 
-    
-    output reg havErr;
-    //interact with cpu
-    output reg [WORDWIDTH-1:0] dataToCPU,
-    output reg readEn,
-    output reg cpuWriteDone,
-    //interact with mem(bus)
-    output reg [IOSTATEWIDTH-1:0] memRW,
-    output reg [ADDRWIDTH-1:0] addrToMem,//重构的时候宽度可以直接改成blockwidth
-    output reg [WORDWIDTH-1:0] dataToMem,
-    //snoopy input and output
-    output reg [ADDRWIDTH-1:0] addrToCache,
-    output reg outReadM,
-    output reg outWriteM,
-    output reg outInv,
-    output reg outWbDone, //告诉另一个cache不必等待这个cache的写回
-    output reg outInvDone,//如果一个cache本身没有snoop到的data,当snoop到writeMiss/invalidate的时候, 仍然要设置wbDone,invDone
-    output reg outHavMsg,
+    //input from cpu
+    input[IOSTATEWIDTH-1:0] rwFromCPU,
+    input[ADDRWIDTH-1:0]    addrFromCPU,
+    input[WORDWIDTH-1:0]    dataFromCPU,
+    //input from mem bus
+    input[ADDRWIDTH-1:0]    addrFromMem,
+    input[WORDWIDTH-1:0]    dataFromMem,
+    input readEnFromMem, //readEnable, finished reading
+    input writeDoneFromMem,//writeEnable,
+    //input from the other cache
+    input havMsgFromCache,
+    input allowReadFromCache
+    input[ADDRWIDTH-1:0]    addrFromCache,
+    input rmFromCache,
+    input wmFromCache,
+    input invFromCache,
+
+    //output to cpu
+    output reg readEnToCPU,
+    output reg writeDoneToCPU,
+    output [WORDWIDTH-1:0] dataToCPU,
+    //output to mem  
+    output reg[IOSTATEWIDTH-1:0] rwToMem,
+    output reg[ADDRWIDTH-1:0] addrToMem,
+    output reg[WORDWIDTH-1:0] dataToMem,
+    //output to the other cache 
+    output reg havMsgToCache,
+    output reg allowReadToCache,
+    output reg[ADDRWIDTH-1:0] addrToCache,
+    output reg rmToCache,
+    output reg wmToCache,
+    output reg invToCache
 );
 
-//version 1
-//only one cacheLine, and one word per block
-//direct map
-wire rh   = (cpuRW == RD) && (cpuAddr == addr);
-wire rm   = (cpuRW == RD) && (cpuAddr != addr);
-wire wh   = (cpuRW == WT) && (cpuAddr == addr);
-wire wm   = (cpuRW == WT) && (cpuAddr != addr);
-wire idel = (cpuRW == IDEL);
+reg [STATEWIDTH-1:0] state,nextState;
+reg [ADDRWIDTH-1:0] addr;
+reg [WORDWIDTH-1:0] cacheLine;
 
-reg[WORDWIDTH-1:0]  cacheLine;//data in cache
-reg[ADDRWIDTH-1:0]  addr;
-reg[STATEWIDTH-1:0] state,nextState;
+reg [ERRWIDTH-1:0] errReg; //register to store err id
 
 
-reg[STATEWIDTH-1:0] stateAfterWB;//state after finished writing back
-reg[STATEWIDTH-1:0] stateAfterRD;//state after finished writing back
+wire rh       = (state != INVALID) && (rwFromCPU == RD) && (addrFromCPU == addr);
+wire rm       = (state == INVALID) || ((rwFromCPU == RD) && (addrFromCPU != addr));
+wire wh       = (state != INVALID) && (rwFromCPU == WT) && (addrFromCPU == addr);
+wire wm       = (state == INVALID) || ((rwFromCPU == WT) && (addrFromCPU != addr));
+wire idel     = (rwFromCPU == IDEL);
 
-reg[ERRWIDTH-1:0] errReg;
-//combinaional 
-//但凡有nextState = INVALID的时候,
-//就该allInvDone = 1
-//如果READING状态的nextState是MODIFIED, 那么需要查看cpuRW是否为WT,如果是, 需要
-//执行写操作
-//状态将改为modified的时候, 需要check是否allInvDone
-always @(reset,cpuRW,addrFromCPU,dataFromCPU,addrFromMem,dataFromMem,memReadEn,memWriteDone,addrFromCache,inReadM,inWriteM,inInv) begin 
-    //default value of output
-    readEn       = 0;
-    cpuWriteDone = 0;
-    outReadM     = 0;
-    outWriteM    = 0;
-    outInv       = 0;
-    wbDone       = 0;
-    invDone      = 0;
-    havErr       = 0;
-    memRW        = IDEL;
-    stateAfterWB = INVALID;
-    outHavMsg    = 0;
-    outwbDone    = 0;
-    outInvDone   = 0;
-    if(reset) begin end else begin
-    case(state) 
-        MODIFIED: begin 
-            if(inHavMsg && (addrFromCache == addr)) begin
-                if(inReadM) begin  //snoop read miss
-                    nextState    = WRITING;
-                    stateAfterWB = SHARED;
+wire snoopRm  = (addrFromCache == addr) && rmFromCache;
+wire snoopWM  = (addrFromCache == addr) && wmFromCache;
+wire snoopInv = (addrFromCache == addr) && invFromCache;
 
-                    memRW        = RD;
-                    addrToMem    = addr;
-                    dataToMem    = cacheLine;
+reg allowRead;
+
+always @(allowReadFromCache) begin
+    //应该保证 allowreadfromcache
+    //和 allowreadtocache 不会同时跳变
+    if(allowReadFromCache)
+        allowRead = allowReadFromCache;
+end
+
+always @(reset,rwFromCPU,addrFromCache,dataFromCPU,addrFromMem,dataFromMem,readEnFromMem,writeEnFromMem,allowReadFromCache,addrFromCache,rmFromCache,wmFromCache, invFromCache) begin 
+    //这样的初始化方式是不是有问题?
+    //有些需要保持的量因为无关的输入变化而无法保持?
+    readEnToCPU        = 0;
+    writeDoneToCPU     = 0;
+    rwToMem            = IDEL;
+    allowReadFromCache = 0;
+    rmToCache          = 0;
+    wmToCache          = 0;
+    invToCache         = 0;
+    havMsgToCache      = 0;
+    if(reset) begin 
+    end
+    else begin 
+        case(state) 
+            MODIFIED: begin 
+                if(snoopRm) begin 
+                    rwToMem   = WT;
+                    addrToMem = addr;
+                    dataToMem = cacheLine;
+                    nextState = M_SRM_WB;
                 end 
-                else if(inWriteM) begin  //snoop write miss
-                    memRW        = RD;
-                    addrToMem    = addr;
-                    dataToMem    = cacheLine;
-                    nextState    = WRITING;
-                    stateAfterWB = INVALID;
+                else if(snoopWM) begin
+                    rwToMem   = WT;
+                    addrToMem = addr;
+                    dataToMem = cacheLine;
+                    nextState = M_SWM_WB;
+                end
+                else if(rh) begin 
+                    readEnToCPU = 1;
+                    dataToCPU   = cacheLine;
+                    nextState   = MODIFIED;
+                end 
+                else if(wh) begin 
+                    cacheLine      = dataFromCPU;
+                    writeDoneToCPU = 1;
+                    nextState      = MODIFIED;
+                end 
+                else if(rm) begin 
+                    //mem,bus,state
+                    memRW         = WT;
+                    addrToMem     = addr;
+                    dataToMem     = cacheLine
+                    havMsgToCache = 1;
+                    rmToCache     = 1;
+                    addrToCache   = addr;
+                    nextState     = M_RM_WB;
+                end 
+                else if(wm) begin 
+                    memRW         = WT;
+                    addrToMem     = addr;
+                    dataToMem     = cacheLine;
+                    havMsgToCache = 1;
+                    wmToCache     = 1;
+                    addrToMem     = addr;
+                    nextState     = M_WM_WB;
+                end 
+                else if(idel) begin 
+                    nextState = MODIFIED;
                 end 
                 else begin 
+                    errReg    = ERR_UNKNOWN;
                     nextState = ERROR;
-                    errReg    = ERR_SNOOPMSG;
                 end
             end
-            else if(rh) begin 
-                nextState = MODIFIED;
-                dataToCPU = cacheLine;
-                readEn    = 1;
-            end 
-            else if(wh) begin 
-                nextState    = MODIFIED;
-                cacheLine    = dataFromCPU;
-                cpuWriteDone = 1;
+            M_SRM_WB: begin 
+                if(writeDoneFromMem) begin 
+                    nextState        = SHARED;
+                    allowReadToCache = 1;
+                end
+                else begin 
+                    nextState = M_SRM_WB;
+                end
             end
-            else if(rm) begin
-                nextState    = WRITING; //first write back
-                stateAfterWB = WAITINGWBTOREAD; //then fetch data from mem, it should only occur after other cache with data-copy have finished WB
-                stateAfterRD = SHARED;//final state is shared
-
-                memRW        = WT;
-                addrToMem    = addr;
-                dataToMem    = cacheLine;
-
-                outHavMsg    = 1;
-                addrToCache  = addrFromCPU;
-                outReadM     = 1; //broadcasting read miss
-            end 
-            else if(wm) begin 
-                nextState    = WRITING;
-                stateAfterWB = WAITINGWBTOREAD;//want to fetch cpuAddr to cache
-                stateAfterRD = MODIFIED;
-
-                memRW        = WT;
-                addrToMem    = addr;
-                dataToMem    = cacheLine;
-
-                outHavMsg    = 1;
-                addrToCache  = addrFromCPU;
-                outWriteM    = 1;
-            end 
-            else if(idel) begin //neither hav cpu access nor bus msg
-                nextState = MODIFIED;
-            end 
-            else begin 
-                nextState = ERROR;
-                errReg    = ERR_HITMIT;
+            M_SWM_WB: begin 
+                if(writeDoneFromMem) begin 
+                    nextState        = INVALID;
+                    allowReadToCache = 1;
+                end
+                else begin 
+                    nextState = M_SWM_WB;
+                end
             end
-        end
-        SHARED: begin 
-            if(inHavMsg && (addrFromCache == addr)) begin
-                if(inReadM) begin         //snoop read miss
-                    outWbDone = 1;        //tell the other cache no need to wait for writing back
+            M_WM_WB: begin 
+                if(writeDoneFromMem) begin 
+                    //mem,data,cpu,bus
+                    if(allowReadFromCache)
+                        rwToMem   = RD;
+                        addrToMem = addrFromCPU;
+                        nextState = M_WM_RD;
+                    else 
+                        nextState = M_WM_WB;
+                end
+                else begin 
+                    nextState = M_WM_WB;
+                end
+            end
+            M_RM_WB:begin 
+                if(writeDoneFromMem) begin 
+                    if(allowReadFromCache) 
+                        rwToMem   = RD;
+                        addrToMem = addrFromCPU;
+                        nextState = M_RM_RD;
+                    else
+                        nextState = M_RM_WB;
+                end 
+                else  nextState = M_RM_WB; 
+            end
+            M_WM_RD: begin 
+                if(readEnFromMem) begin //read enable
+                    rwToMem   = IDEL;
+                    cacheLine = dataFromMem;
+                    addr      = addrFromMem;
+                    cacheLine = dataFromCPU;
+                    nextState = MODIFIED;
+                end
+                else nextState = M_WM_RD;
+            end
+            M_RM_RD: begin 
+                if(readEnFromMem) begin //read enable
+                    rwToMem   = IDEL;
+                    cacheLine = dataFromMem;
+                    addr      = addrFromMem;
+                    nextState = SHARED;
+                end
+                else nextState = M_RM_RD;
+            end 
+            SHARED:begin 
+                if(snoopRm) begin 
                     nextState = SHARED;
                 end 
-                else if(inWriteM) begin   //snoop write miss
-                    outInvDone = 1;
-                    outWbDone  = 1;
-                    nextState  = INVALID;
-                end 
-                else if(invalidate) begin //snoop invalidate msg
-                    outWbDone  = 1;
-                    outInvDone = 1;
-                    nextState  = INVALID;
+                else if(snoopWM) begin
+                    nextState = INVALID;
                 end
-                else begin 
-                    nextState = ERROR;
-                    errReg    = ERR_SNOOPMSG;
+                else if(rh) begin 
+                    readEnToCPU = 1;
+                    dataToCPU   = cacheLine;
+                    nextState   = MODIFIED;
                 end 
+                else if(wh) begin 
+                    cacheLine      = dataFromCPU;
+                    writeDoneToCPU = 1;
+                    nextState      = MODIFIED;
+                end 
+                else if(rm) begin 
+                    //mem,bus,state
+                    memRW         = WT;
+                    addrToMem     = addr;
+                    dataToMem     = cacheLine
+                    havMsgToCache = 1;
+                    rmToCache     = 1;
+                    addrToCache   = addr;
+                    nextState     = S_RM_RD;
+                end 
+                else if(wm) begin 
+                    memRW         = WT;
+                    addrToMem     = addr;
+                    dataToMem     = cacheLine;
+                    havMsgToCache = 1;
+                    wmToCache     = 1;
+                    addrToMem     = addr;
+                    nextState     = S_WM_RD;
+                end 
+                else if(idel) begin 
+                    nextState = SHARED;
+                end 
+                else begin 
+                    errReg    = ERR_UNKNOWN;
+                    nextState = ERROR;
+                end
             end
-            else if(rh) begin 
-                dataToCPU = cacheLine;
-                readEn    = 1;
-                nextState = SHARED;
-            end 
-            else if(wh) begin 
-                cacheLine = dataFromCPU;
-                nextState = MODIFIED;
-                outHavMsg = 1;
-                outInv    = 1;
-            end
-            else if(rm) begin
-                //state:    change to reading
-                //with cpu: nothing 
-                //with mem: read main mem
-                //with bus: read miss message
-                nextState    = READING;
-                stateAfterRD = SHARED;
-                memRW        = RD;
-                addrToMem    = addrFromCPU;
-                outHavMsg    = 1;
-                outReadM     = 1;
-            end 
-            else if(wm) begin 
-                //state:    change to reading
-                //with cpu: nothing 
-                //with mem: read main mem
-                //with bus: read miss message
-                nextState    = READING;
-                stateAfterRD = MODIFIED;
-                memRW        = RD;
-                addrToMem    = addrFromCPU;
-                outHavMsg    = 1;
-                outWriteM    = 1;
-            end 
-            else if(idel) begin //neither hav cpu access nor bus msg
-                nextState = SHARED;
-            end 
-            else begin 
+            default: 
                 nextState = ERROR;
-                errReg    = ERR_HITMIT;
-            end
-        end
-        INVALID: begin 
-        end 
-        default: begin //error state
-            nextState = ERROR;//for DFT consideration
-            havErr    = 1;
-            $display(errReg); //comment this line when synthesising
-        end
-    endcase
-end
-end
-always @(posedge clk) begin 
-    if(state !== MODIFIED && nextState == MODIFIED && ! inInvDone) begin 
-        state <= ERROR;
-    end 
-    else begin
-        state <= nextState;
+                /* `define ERROR      4'd0 //(done) */
+                /* `define MODIFIED   4'd1 //(done) */
+                /* `define M_SRM_WB   4'd2 (done)
+                /* `define M_SWM_WB   4'd3 (done)
+                /* `define M_WM_WB    4'd4 (done)
+                /* `define M_RM_WB    4'd5 (done)
+                /* `define M_WM_RD    4'd6 (done)
+                /* `define M_RM_RD    4'd7 (done)
+                /* `define SHARED     4'd8 
+                /* `define S_SWM_INV  4'd9 
+                /* `define S_SINV_INV 4'd10 //shared, snooped invalidate, invalidate */
+                /* `define S_RM_RD    4'd11 //shared, cpu read miss, reading mem */
+                /* `define S_WM_RD    4'd12 //shared, cpu write miss, need to read */
+                /* `define INVALID    4'd13 */
+                /* `define I_RM_RD    4'd14 //invalid, cpu read miss, read mem */
+                /* `define I_WM_RD    4'd15 //invalid, cpu write miss, read mem */
+        endcase
     end
 end
-endmodule
+
+
+//时序逻辑
+always @(posedge clk) begin 
+    state <= nextState;
+end
+
