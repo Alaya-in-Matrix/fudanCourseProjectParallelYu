@@ -1,23 +1,24 @@
 `define ADDRWIDTH 16
 `define WORDWIDTH 16
+//`define BLOCKSIZE 8
 
+//需不需要为已经broad cast而其他cache还没有完成写回单独设置一个状态?
+//各种状态的WM_RD与RM_RD(inv,shared)似乎可以合并.
 `define STATEWIDTH 4
-`define ERROR      4'd0 //(done)
-`define MODIFIED   4'd1 //(done)
-`define M_SRM_WB   4'd2 //modified, snooped read miss,writing back
-`define M_SWM_WB   4'd3 //modified, snooped write miss, writing back
-`define M_WM_WB    4'd4 //modified, cpu write miss, writing back
-`define M_RM_WB    4'd5 
-`define M_WM_RD    4'd6 //modified, cpu write miss, finished writing back, need to read
-`define M_RM_RD    4'd7
-`define SHARED     4'd8
-/* `define S_SWM_INV  4'd9 //shared, snooped write miss, invalidate */
-/* `define S_SINV_INV 4'd10 //shared, snooped invalidate, invalidate */
-`define S_RM_RD    4'd9//shared, cpu read miss, reading mem
-`define S_WM_RD    4'd10 //shared, cpu write miss, need to read
-`define INVALID    4'd11
-`define I_RM_RD    4'd12 //invalid, cpu read miss, read mem
-`define I_WM_RD    4'd13 //invalid, cpu write miss, read mem
+`define ERROR      4'd0     //(done)
+`define MODIFIED   4'd1     //(done)
+`define M_SRM_WB   4'd2     //modified, snooped read miss,writing back
+`define M_SWM_WB   4'd3     //modified, snooped write miss, writing back
+`define M_WM_WB    4'd4     //modified, cpu write miss, writing back
+`define M_RM_WB    4'd5     //modified, cpu read miss, writing back
+`define M_WM_RD    4'd6     //modified, cpu write miss, finished writing back, other cache has write back its copy, reading
+`define M_RM_RD    4'd7     //modified, cpu read miss, finished writing back, other cache has write back its copy, reading
+`define SHARED     4'd8     //shared.
+`define S_RM_RD    4'd9     //shared, cpu read miss, other cache has write back its copy,reading
+`define S_WM_RD    4'd10    //shared, cpu write miss, other cache has wrtie back its copy,reading
+`define INVALID    4'd11    //INVALID
+`define I_RM_RD    4'd12    //invalid, cpu read miss, other cache has write back its copy,reading
+`define I_WM_RD    4'd13    //invalid, cpu write miss, other cache has write back its copy, reaading
 
 `define IOSTATEWIDTH 2
 `define RD   2'd0
@@ -71,10 +72,9 @@ module cache(
 );
 
 reg [STATEWIDTH-1:0] state,nextState;
-reg [ADDRWIDTH-1:0] addr;
-reg [WORDWIDTH-1:0] cacheLine;
-
-reg [ERRWIDTH-1:0] errReg; //register to store err id
+reg [ADDRWIDTH-1:0]  addr;
+reg [WORDWIDTH-1:0]  cacheLine;
+reg [ERRWIDTH-1:0]   errReg; //register to store err id
 
 
 wire rh       = (state != INVALID) && (rwFromCPU == RD) && (addrFromCPU == addr);
@@ -87,27 +87,18 @@ wire snoopRm  = (addrFromCache == addr) && rmFromCache;
 wire snoopWM  = (addrFromCache == addr) && wmFromCache;
 wire snoopInv = (addrFromCache == addr) && invFromCache;
 
-/* reg allowRead; */
-
-/* always @(allowReadFromCache) begin */
-/*     //应该保证 allowreadfromcache */
-/*     //和 allowreadtocache 不会同时跳变 */
-/*     if(allowReadFromCache) */
-/*         allowRead = allowReadFromCache; */
-/* end */
-
-//或许
+//组合逻辑
 always @(reset,rwFromCPU,addrFromCache,dataFromCPU,addrFromMem,dataFromMem,readEnFromMem,writeEnFromMem,allowReadFromCache,addrFromCache,rmFromCache,wmFromCache, invFromCache) begin 
     //这样的初始化方式是不是有问题?
     //有些需要保持的量因为无关的输入变化而无法保持?
     readEnToCPU        = 0;
     writeDoneToCPU     = 0;
     rwToMem            = IDEL;
-    allowReadFromCache = 0;
+    havMsgToCache      = 0;
+    allowReadFromCache = 0; //也许这句不能有?
     rmToCache          = 0;
     wmToCache          = 0;
     invToCache         = 0;
-    havMsgToCache      = 0;
     nextState          = state;
     if(reset) begin 
     end
@@ -115,12 +106,15 @@ always @(reset,rwFromCPU,addrFromCache,dataFromCPU,addrFromMem,dataFromMem,readE
         case(state) 
             MODIFIED: begin 
                 if(snoopRm) begin 
-                    rwToMem   = WT;
+                    //write back, final state change to SHARED
+                    //应该不需要writeEnable信号吧, 反正本来就是要stall的.
+                    rwToMem   = WT; 
                     addrToMem = addr;
                     dataToMem = cacheLine;
                     nextState = M_SRM_WB;
                 end 
                 else if(snoopWM) begin
+                    //write back, final state change to INVALID
                     rwToMem   = WT;
                     addrToMem = addr;
                     dataToMem = cacheLine;
@@ -137,7 +131,9 @@ always @(reset,rwFromCPU,addrFromCache,dataFromCPU,addrFromMem,dataFromMem,readE
                     nextState      = MODIFIED;
                 end 
                 else if(rm) begin 
-                    //mem,bus,state
+                    //write back
+                    //broadcast read miss
+                    //final state change to shared
                     memRW         = WT;
                     addrToMem     = addr;
                     dataToMem     = cacheLine
@@ -147,6 +143,9 @@ always @(reset,rwFromCPU,addrFromCache,dataFromCPU,addrFromMem,dataFromMem,readE
                     nextState     = M_RM_WB;
                 end 
                 else if(wm) begin 
+                    //write back
+                    //broadcast write miss
+                    //final state remains modified
                     memRW         = WT;
                     addrToMem     = addr;
                     dataToMem     = cacheLine;
@@ -156,9 +155,11 @@ always @(reset,rwFromCPU,addrFromCache,dataFromCPU,addrFromMem,dataFromMem,readE
                     nextState     = M_WM_WB;
                 end 
                 else if(idel) begin 
+                    //no bus msg and no cpu access
                     nextState = MODIFIED;
                 end 
                 else begin 
+                    //error occurs
                     errReg    = ERR_UNKNOWN;
                     nextState = ERROR;
                 end
@@ -252,7 +253,7 @@ always @(reset,rwFromCPU,addrFromCache,dataFromCPU,addrFromMem,dataFromMem,readE
                 else if(rh) begin 
                     readEnToCPU = 1;
                     dataToCPU   = cacheLine;
-                    nextState   = MODIFIED;
+                    nextState   = SHARED;
                 end 
                 else if(wh) begin 
                     cacheLine      = dataFromCPU;
@@ -407,4 +408,4 @@ end
 always @(posedge clk) begin 
     state <= nextState;
 end
-
+endmodule
