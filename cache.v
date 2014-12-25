@@ -11,7 +11,7 @@ module cache(
     input[ADDRWIDTH-1:0]    addrFromCPU,
     input[WORDWIDTH-1:0]    dataFromCPU,
     //input from mem bus
-    input[ADDRWIDTH-1:0]    addrFromMem,
+    /* input[ADDRWIDTH-1:0]    addrFromMem, */
     input[WORDWIDTH-1:0]    dataFromMem,
     input readEnFromMem, //readEnable, finished reading
     input writeDoneFromMem,//writeEnable,
@@ -57,7 +57,7 @@ wire snoopWM  = (addrFromCache == addr) && wmFromCache;
 wire snoopInv = (addrFromCache == addr) && invFromCache;
 
 //组合逻辑
-always @(reset,rwFromCPU,addrFromCache,dataFromCPU,addrFromMem,dataFromMem,readEnFromMem,writeEnFromMem,allowReadFromCache,addrFromCache,rmFromCache,wmFromCache, invFromCache) begin 
+always @(reset,rwFromCPU,addrFromCache,dataFromCPU,dataFromMem,readEnFromMem,writeEnFromMem,allowReadFromCache,addrFromCache,rmFromCache,wmFromCache, invFromCache) begin 
     //这样的初始化方式是不是有问题?
     //有些需要保持的量因为无关的输入变化而无法保持?
     readEnToCPU        = 0;
@@ -178,10 +178,10 @@ always @(reset,rwFromCPU,addrFromCache,dataFromCPU,addrFromMem,dataFromMem,readE
             end
             M_WM_RD: begin 
                 if(readEnFromMem) begin //read enable
-                    if(addrFromCPU == addrFromMem) begin 
+                    if(addrFromCPU == addrToMem) begin 
                         rwToMem   = IDEL;
                         cacheLine = dataFromMem;
-                        addr      = addrFromMem;
+                        addr      = addrToMem;
                         cacheLine = dataFromCPU;
                         nextState = MODIFIED;
                     end 
@@ -197,7 +197,7 @@ always @(reset,rwFromCPU,addrFromCache,dataFromCPU,addrFromMem,dataFromMem,readE
                     if(addrFromCPU == addrToMem) begin
                         rwToMem   = IDEL;
                         cacheLine = dataFromMem;
-                        addr      = addrFromMem;
+                        addr      = addrToMem;
                         nextState = SHARED;
                         readEnToCPU = 1;
                         dataToCPU = cacheLine;
@@ -266,10 +266,10 @@ always @(reset,rwFromCPU,addrFromCache,dataFromCPU,addrFromMem,dataFromMem,readE
             end
             S_RM_RD: begin 
                 if(readEnFromMem) begin //read enable
-                    if(addrFromMem == addrFromCPU) begin 
+                    if(addrToMem == addrFromCPU) begin 
                         rwToMem     = IDEL;
                         cacheLine   = dataFromMem;
-                        addr        = addrFromMem;
+                        addr        = addrToMem;
                         cacheLine   = dataFromCPU;
                         nextState   = SHARED;
                         readEnToCPU = 1;
@@ -284,10 +284,10 @@ always @(reset,rwFromCPU,addrFromCache,dataFromCPU,addrFromMem,dataFromMem,readE
             end
             S_WM_RD: begin 
                 if(readEnFromMem) begin //read enable
-                    if(addrFromCPU == addrFromMem) begin 
+                    if(addrFromCPU == addrToMem) begin 
                         rwToMem     = IDEL;
                         cacheLine   = dataFromMem;
-                        addr        = addrFromMem;
+                        addr        = addrToMem;
                         cacheLine   = dataFromCPU;
                         nextState   = MODIFIED;
                     end 
@@ -336,10 +336,10 @@ always @(reset,rwFromCPU,addrFromCache,dataFromCPU,addrFromMem,dataFromMem,readE
             end
             I_RM_RD: begin  //equal to I_RM_RD
                 if(readEnFromMem) begin //read enable
-                    if(addrFromMem == addrFromCPU) begin 
+                    if(addrToMem == addrFromCPU) begin 
                         rwToMem     = IDEL;
                         cacheLine   = dataFromMem;
-                        addr        = addrFromMem;
+                        addr        = addrToMem;
                         cacheLine   = dataFromCPU;
                         nextState   = SHARED;
                         readEnToCPU = 1;
@@ -354,10 +354,10 @@ always @(reset,rwFromCPU,addrFromCache,dataFromCPU,addrFromMem,dataFromMem,readE
             end 
             I_WM_RD: begin 
                 if(readEnFromMem) begin //read enable
-                    if(addrFromCPU == addrFromMem) begin 
+                    if(addrFromCPU == addrToMem) begin 
                         rwToMem     = IDEL;
                         cacheLine   = dataFromMem;
-                        addr        = addrFromMem;
+                        addr        = addrToMem;
                         cacheLine   = dataFromCPU;
                         nextState   = MODIFIED;
                     end 

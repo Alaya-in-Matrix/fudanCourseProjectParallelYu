@@ -27,5 +27,6 @@
 
 
 `define ERRWIDTH          4
-`define ERR_UNKNOWN       4'd0;
+`define ERR_UNKNOWN       4'd0
 `define ERR_ADDR_MISMATCH 4'd1
+`define ERR_MEMRW         4'd2

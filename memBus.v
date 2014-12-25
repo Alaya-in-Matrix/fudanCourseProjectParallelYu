@@ -8,7 +8,6 @@ module memBus(
     input wire[IOSTATEWIDTH-1:0] rwFromCacheA;
     input wire[ADDRWIDTH-1:0]    addrFromCacheA;
     input wire[WORDWIDTH-1:0]    dataFromCacheA;
-    output reg[ADDRWIDTH-1:0]    addrToCacheA;
     output reg[ADDRWIDTH-1:0]    dataToCacheA;
     output reg rdEnToCacheA;
     output reg wbDoneToCacheA;
@@ -17,36 +16,53 @@ module memBus(
     input wire[IOSTATEWIDTH-1:0] rwFromCacheB;
     input wire[ADDRWIDTH-1:0]    addrFromCacheB;
     input wire[WORDWIDTH-1:0]    dataFromCacheB;
-    output reg[ADDRWIDTH-1:0]    addrToCacheB;
     output reg[ADDRWIDTH-1:0]    dataToCacheB;
     output reg rdEnToCacheB;
     output reg wbDoneToCacheB;
+
+    output reg[ERRWIDTH-1:0] errReg;
 );
 
 reg[IOSTATEWIDTH-1:0]  rwToMem;//if rwtomem is not idel, then it means mem is being accessed
-reg[ADDRWIDTH-1:0]     addrMem;
-reg[WORDWIDTH-1:0]     dataMem;
+reg[ADDRWIDTH-1:0]     addrToMem;
+reg[WORDWIDTH-1:0]     dataToMem;
+reg[WORDWIDTH-1:0]     dataFromMem;
 reg rdEn,wbDone;
 reg[7:0] delay;//128 delay
 reg[WORDWIDTH-1:0] mem[0:MEMWORDS-1];
 
 always @(reset,rwFromCacheA,rwFromCacheB) begin 
-    rdEnToCacheA   = 0;
-    wbDoneToCacheA = 0;
-    rdEnToCacheB   = 0;
-    wbDoneToCacheB = 0;
-    rwToMem        = IDEL;
-    rdEn           = 0;
-    wbDone         = 0;
-    delay          = 100;
-    if(reset) begin 
-    end
-    else if(rwFromCacheA != IDEL) begin 
-    end
-    else if(rwFromCacheB != IDEL) begin 
-    end 
-end
+    if(!reset && rwToMem == IDEL) begin 
+        if(rwFromCacheA != IDEL) begin 
+            dataToCacheA   = dataFromMem;
+            rdEnToCacheA   = rdEn;
+            wbDoneToCacheA = wbDone;
+            rwToMem        = rwFromCacheA;
+            addrToMem      = addrFromCacheA;
+            dataToMem      = dataFromCacheA;
 
+            rdEnToCacheB   = 0;
+            wbDoneToCacheB = 0;
+        end 
+        else if(rwFromCacheB != IDEL) begin 
+            dataToCacheB   = dataFromMem;
+            rdEnToCacheB   = rdEn;
+            wbDoneToCacheB = wbDone;
+            rwToMem        = rwFromCacheB;
+            addrToMem      = addrFromCacheB;
+            dataToMem      = dataFromCacheB;
+
+            rdEnToCacheA   = 0;
+            wbDoneToCacheA = 0;
+        end
+        else begin 
+            rdEnToCacheA   = 0;
+            wbDoneToCacheA = 0;
+            rdEnToCacheB   = 0;
+            wbDoneToCacheB = 0;
+        end 
+    end
+end
 always @(posedge clk) begin 
     if(reset)
         rwToMem = IDEL;
@@ -57,8 +73,9 @@ always @(posedge clk) begin
             delay   = delay -1;
         end 
         else begin 
-            dataMem = mem[addrMem];
-            rdEn    = 1;
+            dataFromMem = mem[addrToMem];
+            rdEn        = 1;
+            rwToMem     = IDEL;
         end
     end 
     else if(rwToMem == WT) begin 
@@ -68,8 +85,9 @@ always @(posedge clk) begin
             delay  = delay -1;
         end 
         else begin 
-            mem[addrMem] = dataMem;
-            wbDone       = 1;
+            mem[addrToMem] = dataToMem;
+            wbDone         = 1;
+            rwToMem        = IDEL;
         end
     end 
     else if(rwToMem == IDEL) begin 
