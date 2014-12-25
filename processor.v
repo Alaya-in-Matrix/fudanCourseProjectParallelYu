@@ -1,81 +1,122 @@
-//instruction supported: 
-//ld registerNum,memAddr
-//st memAddr,registerNum
-//ldi register,#number
-//sti memAddr,#number
-//four 16-bit registers
+/*
+* instruction supported::
+    * ld regIdx,memAddr
+    * st regIdx,memAddr
+    * nop :stall one cycle
+    * end :end of program
+    * set reg,instanceNum
+*/
 
 `include "./def.v"
-`define INSTRUCTIONWIDTH 20 //32-bit instruction 
-`define OPWIDTH 2
-`define LD 2'd0 //load from mem
-`define ST 2'd1 //store from register to mem
-`define LI 2'd2 //load instance number to register
-`define SI 2'd3 //store instance to mem
-`define DSTWIDTH 2
-`define R0 2'd0
-`define R1 2'd1
-`define R2 2'd2
-`define R3 2'd3
-`define SRCWIDTH 16
+`define OPWIDTH 2 //we have 5 operations(ld,st,nop,end,set)
+`define LD   3'd0
+`define ST   3'd1
+`define NOP  3'd2
+`define SET  3'd3
+
+`define REGNUM 4 //two register
+`define REGWIDTH 2 //one bit to specify register
+`define INSWIDTH 20 //(3+1+16)
+`define PCWIDTH 8
+
+`define CPUSTATENUM 3
+`define CPUSTATENUMWIDTH 2
+`define FETCH 2'd0
+`define EXE   2'd1
+`define MEM   2'd2
+`define ERR   2'd3
 module processor(
     input clk,
     input reset,
-        
-    //interact with outside world
-    input[INSTRUCTIONWIDTH-1:0] instrction;
-    output[WORDWIDTH-1:0] dataOut;
 
-
-    //interact with memory(cache),cache is transparent to CPU
-    input rdEn,
-    input wtEn,
-    input [WORDWIDTH-1:0] dataFromMem,
+    //interact with real world 
+    input [INSWIDTH-1:0]  ins,
+    output reg[WORDWIDTH-1:0] data,
+    output[PCWIDTH-1:0]          pcCounter,
+    //interact with memory, cache is transparent to CPU
     output reg[IOSTATEWIDTH-1:0] rwToMem,
     output reg[ADDRWIDTH-1:0] addrToMem,
     output reg[WORDWIDTH-1:0] dataToMem,
-
-    //err
-    output reg[ERRWIDTH-1:0] errReg;
+    input wire rdEn,wtEn,
+    input wire[WORDWIDTH-1:0] dataFromMem
 );
 
-wire[OPWIDTH-1:0] op   = instrction[(INSTRUCTIONWIDTH-1)-                  :OPWIDTH];
-wire[DSTWIDTH-1:0] dst = instrction[(INSTRUCTIONWIDTH-OPWIDTH-1)-          :DSTWIDTH];
-wire[SRCWIDTH-1:0] src = instrction[(INSTRUCTIONWIDTH-OPWIDTH-DSTWIDTH-1)- :SRCWIDTH];
+reg[PCWIDTH-1:0]          counter;
+reg[CPUSTATENUMWIDTH-1:0] state;
+reg[WORDWIDTH-1:0]        regFile[REGNUM-1:0];//register files
+assign pcCounter = counter;
 
-reg havErr;
-//暂时先不用PC, 之后重构时可以采用PC自动加载指令.
+
+wire[OPWIDTH-1:0] op        = instrction[(INSWIDTH-1)-:OPWIDTH];
+wire[REGWIDTH-1:0] regIdx   = instrction[(INSWIDTH-OPWIDTH-1)-:REGWIDTH];
+wire[WORDWIDTH-1:0] insData = instruction[INSWIDTH-OPWIDTH-REGWIDTH-1:0];
+
 always @(posedge clk) begin 
     if(reset) begin 
-        havErr  = 0;
-        errReg  = NOERR;
-        dataOut = 0;
+        data    = 0;
         rwToMem = IDEL;
-    end
-    else if(! havErr)  begin 
-        if(op == LD) begin //load data from memory to reigster
-            if(rdEn) begin 
-                if(src > REGNUM)
+        counter = 0;
+        state   = FETCH;
+    end 
+    else if(state == ERR) begin 
+        state = ERR;
+    end 
+    else if(state == FETCH) begin 
+        //counter,state,data,rwtomem,addrtomem,datatomem
+        counter = counter + 1'b1;
+        state   = EXE;
+        rwToMem = IDEL;
+    end 
+    else if(state == EXE) begin 
+        case(op) 
+            NOP : begin 
+                rwToMem = IDEL;
+                state   = FETCH;
             end
-        end
-        else if(OP = ST) begin 
-            if(wtEn) begin 
+            SET : begin 
+                rwToMem         = IDEL;
+                regFile[regIdx] = insData;
+                state           = FETCH;
+            end 
+            LD  : begin 
+                rwToMem     = RD;
+                addrToCache = insData;
+                state       = MEM;
+            end 
+            ST  : begin 
+                rwToMem   = WT;
+                addrToMem = insData;
+                dataToMem = regFile[regIdx];
             end
-        end 
-        else if(OP = LI) begin 
-            if(rdEn) begin 
+            default:
+                state = ERR;
+        endcase
+    end 
+    else if(state == MEM) begin 
+        case(op) 
+            NOP,SET : begin 
+                state   = ERR;
             end
-        end 
-        else if(OP = SI) begin 
-            if(wtEn) begin 
+            LD  : begin 
+                if(! rdEn) 
+                    state = MEM;
+                else begin 
+                    regFile[regIdx] = dataFromMem;
+                    rwToMem         = IDEL;
+                    state           = FETCH;
+                end 
+            end 
+            ST  : begin 
+                if(! wtEn) 
+                    state = MEM;
+                else begin 
+                    rwToMem = IDEL;
+                    state   = FETCH;
+                end 
             end
-        end 
-        else begin 
-            havErr = 1;
-            errReg = ERR_CPUOP;
-        end 
-    end
-    else 
-        havErr = 1;
-end
+            default:
+                state = ERR;
+        endcase
+    end 
+end 
 endmodule
