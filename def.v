@@ -30,3 +30,5 @@
 `define ERR_UNKNOWN       4'd0
 `define ERR_ADDR_MISMATCH 4'd1
 `define ERR_MEMRW         4'd2
+`define NOERR             4'd3
+`define ERR_CPUOP         4'd4
