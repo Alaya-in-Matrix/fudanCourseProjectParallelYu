@@ -46,18 +46,22 @@ reg [WORDWIDTH-1:0]  cacheLine;
 reg [ERRWIDTH-1:0]   errReg; //register to store err id
 
 
-wire rh       = (state != INVALID) && (rwFromCPU == RD) && (addrFromCPU == addr);
-wire rm       = (state == INVALID) || ((rwFromCPU == RD) && (addrFromCPU != addr));
-wire wh       = (state != INVALID) && (rwFromCPU == WT) && (addrFromCPU == addr);
-wire wm       = (state == INVALID) || ((rwFromCPU == WT) && (addrFromCPU != addr));
-wire idel     = (rwFromCPU == IDEL);
+wire rh   = (state != INVALID) && (rwFromCPU == RD) && (addrFromCPU == addr);
+wire rm   = (state == INVALID) || ((rwFromCPU == RD) && (addrFromCPU != addr));
+wire wh   = (state != INVALID) && (rwFromCPU == WT) && (addrFromCPU == addr);
+wire wm   = (state == INVALID) || ((rwFromCPU == WT) && (addrFromCPU != addr));
+wire idel = (rwFromCPU == IDEL);
 
 wire snoopRm  = (addrFromCache == addr) && rmFromCache;
 wire snoopWM  = (addrFromCache == addr) && wmFromCache;
 wire snoopInv = (addrFromCache == addr) && invFromCache;
 
 //组合逻辑
-always @(reset,rwFromCPU,addrFromCache,dataFromCPU,dataFromMem,readEnFromMem,writeEnFromMem,allowReadFromCache,addrFromCache,rmFromCache,wmFromCache, invFromCache) begin 
+always @(reset,
+         rwFromCPU,addrFromCache,dataFromCPU,
+         dataFromMem,readEnFromMem,writeEnFromMem,
+         allowReadFromCache,addrFromCache,rmFromCache,wmFromCache, invFromCache
+     ) begin 
     //这样的初始化方式是不是有问题?
     //有些需要保持的量因为无关的输入变化而无法保持?
     readEnToCPU        = 0;
