@@ -31,8 +31,23 @@ reg rdEn,wbDone;
 reg[7:0] delay;//128 delay
 reg[WORDWIDTH-1:0] mem[0:MEMWORDS-1];
 
-always @(reset,rwFromCacheA,rwFromCacheB) begin 
-    if(!reset && rwToMem == IDEL) begin 
+/* always @(reset,rwFromCacheA,rwFromCacheB) begin */ 
+always begin 
+    if(rdEn ==1 && wbDone = 1) begin 
+        rwToMem = IDEL;
+    end 
+end
+always begin
+    if(reset) begin 
+        rdEn    = 1;
+        wbDone  = 1;
+        rwToMem = IDEL;
+        rdEnToCacheB   = 1;
+        wbDoneToCacheB = 1;
+        rdEnToCacheA   = 1;
+        wbDoneToCacheA = 1;
+    end
+    else if(rwToMem == IDEL) begin 
         if(rwFromCacheA != IDEL) begin 
             dataToCacheA   = dataFromMem;
             rdEnToCacheA   = rdEn;
@@ -56,43 +71,40 @@ always @(reset,rwFromCacheA,rwFromCacheB) begin
             wbDoneToCacheA = 0;
         end
         else begin 
-            rdEnToCacheA   = 0;
-            wbDoneToCacheA = 0;
-            rdEnToCacheB   = 0;
-            wbDoneToCacheB = 0;
+            rdEnToCacheA   = 1;
+            wbDoneToCacheA = 1;
+            rdEnToCacheB   = 1;
+            wbDoneToCacheB = 1;
         end 
     end
 end
+//同一个reg是不是不能够被多个always块赋值
 always @(posedge clk) begin 
     if(reset)
         rwToMem = IDEL;
     else if(rwToMem == RD) begin 
         if(delayCounter > 0) begin 
-            wbDone  = 0;
             rdEn    = 0;
             delay   = delay -1;
         end 
         else begin 
             dataFromMem = mem[addrToMem];
             rdEn        = 1;
-            rwToMem     = IDEL;
         end
     end 
     else if(rwToMem == WT) begin 
         if(delayCounter > 0) begin 
             wbDone = 0;
-            rdEn   = 0;
             delay  = delay -1;
         end 
         else begin 
             mem[addrToMem] = dataToMem;
             wbDone         = 1;
-            rwToMem        = IDEL;
         end
     end 
     else if(rwToMem == IDEL) begin 
-        wbDone = 0;
-        rdEn   = 0;
+        wbDone = 1;
+        rdEn   = 1;
         delay  = 100;
     end
 end
