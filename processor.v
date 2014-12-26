@@ -3,19 +3,12 @@
     * ld regIdx,memAddr
     * st regIdx,memAddr
     * nop :stall one cycle
-    * end :end of program
     * set reg,instanceNum
 */
 
 `include "./def.v"
-`define OPWIDTH 2 //we have 5 operations(ld,st,nop,end,set)
-`define LD   3'd0
-`define ST   3'd1
-`define NOP  3'd2
-`define SET  3'd3
 
 `define REGNUM 4 //two register
-`define REGWIDTH 2 //one bit to specify register
 `define INSWIDTH 20 //(3+1+16)
 `define PCWIDTH 8
 
@@ -78,6 +71,10 @@ always @(posedge clk) begin
                 regFile[regIdx] = insData;
                 state           = `FETCH;
             end 
+            `GET : begin
+                rwToMem = `IDEL;
+                data    = regFile[regIdx];
+                state   = `FETCH;
             `LD  : begin 
                 rwToMem   = `RD;
                 addrToMem = insData;

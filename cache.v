@@ -6,32 +6,27 @@ module cache(
     input clk,
     input reset,
 
-    //input from cpu
+    //interact with CPU
     input[`IOSTATEWIDTH-1:0] rwFromCPU,
     input[`ADDRWIDTH-1:0]    addrFromCPU,
     input[`WORDWIDTH-1:0]    dataFromCPU,
-    //input from mem bus
-    /* input[ADDRWIDTH-1:0]    addrFromMem, */
+    output reg readEnToCPU,
+    output reg writeDoneToCPU,
+    output reg[`WORDWIDTH-1:0] dataToCPU,
+    //interact with MEM
     input[`WORDWIDTH-1:0]    dataFromMem,
-    input readEnFromMem, //readEnable, finished reading
-    input writeDoneFromMem,//writeEnable,
-    //input from the other cache
+    input readEnFromMem,                    //readEnable, finished reading
+    input writeDoneFromMem,                 //writeEnable,
+    output reg[`IOSTATEWIDTH-1:0] rwToMem,
+    output reg[`ADDRWIDTH-1:0] addrToMem,
+    output reg[`WORDWIDTH-1:0] dataToMem,
+    //interact with the other CACHE
     input havMsgFromCache,
     input allowReadFromCache,
     input[`ADDRWIDTH-1:0]    addrFromCache,
     input rmFromCache,
     input wmFromCache,
     input invFromCache,
-
-    //output to cpu
-    output reg readEnToCPU,
-    output reg writeDoneToCPU,
-    output reg[`WORDWIDTH-1:0] dataToCPU,
-    //output to mem  
-    output reg[`IOSTATEWIDTH-1:0] rwToMem,
-    output reg[`ADDRWIDTH-1:0] addrToMem,
-    output reg[`WORDWIDTH-1:0] dataToMem,
-    //output to the other cache 
     output reg havMsgToCache,
     output reg allowReadToCache,
     output reg[`ADDRWIDTH-1:0] addrToCache,

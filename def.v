@@ -32,3 +32,12 @@
 `define ERR_MEMRW         4'd2
 `define NOERR             4'd3
 `define ERR_CPUOP         4'd4
+
+`define LD   3'd0
+`define ST   3'd1
+`define NOP  3'd2
+`define SET  3'd3
+`define GET  3'd4 //相当于Print函数, 用于传递寄存器数据到外部
+
+`define OPWIDTH 3 //we have 5 operations(ld,st,nop,end,set)
+`define REGWIDTH 2 //one bit to specify register
