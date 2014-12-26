@@ -8,9 +8,6 @@
 
 `include "./def.v"
 
-`define REGNUM 4 //two register
-`define INSWIDTH 20 //(3+1+16)
-`define PCWIDTH 8
 
 `define CPUSTATENUM 3
 `define CPUSTATENUMWIDTH 2

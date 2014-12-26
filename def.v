@@ -40,4 +40,9 @@
 `define GET  3'd4 //相当于Print函数, 用于传递寄存器数据到外部
 
 `define OPWIDTH 3 //we have 5 operations(ld,st,nop,end,set)
-`define REGWIDTH 2 //one bit to specify register
+`define REGWIDTH 1 //one bit to specify register
+`define R0 1'd0
+`define R1 1'd1
+`define REGNUM 4 //two register
+`define INSWIDTH 20 //(3+1+16)
+`define PCWIDTH 8

@@ -135,7 +135,7 @@ cache C2(
 );
 memBus mb(
     .clk(clk),
-    .reset(reset),
+    `.reset(reset),
 
     .rwFromCacheA(rw_C1_M),
     .addrFromCacheA(addr_C1_M),
@@ -153,8 +153,20 @@ memBus mb(
 );
 //似乎对于reset和default值,还有些问题
 //initial and simulations
+always #5 clk = ~clk;
 initial begin 
     clk   = 0;
+    reset = 0;
+    code1.code[0] = {`SET,`R0,`WORDWIDTH'd3}; //p1.r0 = 3
+    code1.code[1] = {`ST,`R0,`ADDRWIDTH'd0};  //mem[0] = p1.r0
+
+    code2.code[0] = {`NOP,`R0,`WORDWIDTH'd0};
+    code2.code[1] = {`NOP,1'd0,16'd0};
+    code2.code[2] = {`LD,`R0,`ADDRWIDTH'd0};  //p2.r0 = mem[0];
+    codd2.code[3] = {`GET,`R0,16'd0};         //print p2.r0; should be 3
+    #5;
+    reset = 1;
+    #5;
     reset = 0;
 end
 endmodule
