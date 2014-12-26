@@ -73,7 +73,7 @@ always @(reset,
         rmToCache        = 0;
         wmToCache        = 0;
         invToCache       = 0;
-        nextState        = INVALID;
+        nextState        = `INVALID;
     end
     else begin 
         case(state) 

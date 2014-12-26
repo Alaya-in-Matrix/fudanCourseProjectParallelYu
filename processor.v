@@ -7,8 +7,6 @@
 */
 
 `include "./def.v"
-
-
 `define CPUSTATENUM 3
 `define CPUSTATENUMWIDTH 2
 `define FETCH 2'd0
@@ -72,6 +70,7 @@ always @(posedge clk) begin
                 rwToMem = `IDEL;
                 data    = regFile[regIdx];
                 state   = `FETCH;
+            end
             `LD  : begin 
                 rwToMem   = `RD;
                 addrToMem = insData;

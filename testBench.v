@@ -35,11 +35,11 @@ wire[`ADDRWIDTH-1:0] addr_C2_C1,addr_C1_C2;
 wire rm_C2_C1,rm_C1_C2,wm_C2_C1,wm_C1_C2,inv_C1_C2,inv_C2_C1;
 codeRam code1(
     .pc(pc_proc1_code1),
-    .ins(ins_code1_proc1),
+    .ins(ins_code1_proc1)
 );
 codeRam code2(
     .pc(pc_proc2_code2),
-    .ins(ins_code2_proc2),
+    .ins(ins_code2_proc2)
 );
 processor P1(
     .clk(clk),
@@ -90,7 +90,7 @@ cache C1(
     .datatomem(data_C1_M),
 
     .havMsgFromCache(msg_C2_C1),
-    .allowReadToCache(allowRead_C2_C1),
+    .allowReadFromCache(allowRead_C2_C1),
     .addrFromCache(addr_C2_C1),
     .rmFromCache(rm_C2_C1),
     .wmFromCache(wm_C2_C1),
@@ -121,7 +121,7 @@ cache C2(
     .datatomem(data_C2_M),
 
     .havMsgFromCache(msg_C1_C2),
-    .allowReadToCache(allowRead_C1_C2),
+    .allowReadFromCache(allowRead_C1_C2),
     .addrFromCache(addr_C1_C2),
     .rmFromCache(rm_C1_C2),
     .wmFromCache(wm_C1_C2),
@@ -135,7 +135,7 @@ cache C2(
 );
 memBus mb(
     .clk(clk),
-    `.reset(reset),
+    .reset(reset),
 
     .rwFromCacheA(rw_C1_M),
     .addrFromCacheA(addr_C1_M),
@@ -144,12 +144,12 @@ memBus mb(
     .rdEnToCacheA(rdEn_M_C1),
     .wbDoneToCacheA(wtEn_M_C1),
 
-    .rwFromCacheA(rw_C2_M),
-    .addrFromCacheA(addr_C2_M),
-    .dataFromCacheA(data_C2_M),
-    .dataToCacheA(data_M_C2),
-    .rdEnToCacheA(rdEn_M_C2),
-    .wbDoneToCacheA(wtEn_M_C2)
+    .rwFromCacheB(rw_C2_M),
+    .addrFromCacheB(addr_C2_M),
+    .dataFromCacheB(data_C2_M),
+    .dataToCacheB(data_M_C2),
+    .rdEnToCacheB(rdEn_M_C2),
+    .wbDoneToCacheB(wtEn_M_C2)
 );
 //似乎对于reset和default值,还有些问题
 //initial and simulations
@@ -174,13 +174,13 @@ endmodule
 //store instructions
 module codeRam(
     input[`PCWIDTH-1:0] pc,
-    output[`INSWIDTH-1:0] ins
+    output reg[`INSWIDTH-1:0] ins
 );
-parameter CODESIZE 16; //a progra could have at most 16 instructions
+parameter CODESIZE = 16; //a progra could have at most 16 instructions
 reg[`INSWIDTH-1:0] codes[0:CODESIZE-1];
 always @(pc) begin 
     if(pc >= CODESIZE) begin 
-        ins = {NOP,(`INSWIDTH-`OPWIDTH)'d0}; //return nop
+        ins = {`NOP,18'd0}; //return nop
     end
     else begin 
         ins = codes[pc];
