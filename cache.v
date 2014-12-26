@@ -1,7 +1,7 @@
-`include "./def.v"
 //只有allowRead才能进入需要read的状态.
 //也许write enable没什么用?
 //非error/m/s/i的状态, 只能有一个出口.
+`include "./def.v"
 module cache(
     input clk,
     input reset,
@@ -17,7 +17,7 @@ module cache(
     input writeDoneFromMem,//writeEnable,
     //input from the other cache
     input havMsgFromCache,
-    input allowReadFromCache
+    input allowReadFromCache,
     input[`ADDRWIDTH-1:0]    addrFromCache,
     input rmFromCache,
     input wmFromCache,
@@ -26,7 +26,7 @@ module cache(
     //output to cpu
     output reg readEnToCPU,
     output reg writeDoneToCPU,
-    output [`WORDWIDTH-1:0] dataToCPU,
+    output reg[`WORDWIDTH-1:0] dataToCPU,
     //output to mem  
     output reg[`IOSTATEWIDTH-1:0] rwToMem,
     output reg[`ADDRWIDTH-1:0] addrToMem,
@@ -50,7 +50,7 @@ wire rh   = (state != `INVALID) && (rwFromCPU  == `RD) && (addrFromCPU == addr);
 wire rm   = (state == `INVALID) || ((rwFromCPU == `RD) && (addrFromCPU != addr));
 wire wh   = (state != `INVALID) && (rwFromCPU  == `WT) && (addrFromCPU == addr);
 wire wm   = (state == `INVALID) || ((rwFromCPU == `WT) && (addrFromCPU != addr));
-wire idel = (rwFromCPU == IDEL);
+wire idel = (rwFromCPU == `IDEL);
 
 wire snoopRm  = (addrFromCache == addr) && rmFromCache;
 wire snoopWM  = (addrFromCache == addr) && wmFromCache;
@@ -59,20 +59,20 @@ wire snoopInv = (addrFromCache == addr) && invFromCache;
 //组合逻辑
 always @(reset,
          rwFromCPU,addrFromCache,dataFromCPU,
-         dataFromMem,readEnFromMem,writeEnFromMem,
+         dataFromMem,readEnFromMem,writeDoneFromMem,
          allowReadFromCache,addrFromCache,rmFromCache,wmFromCache, invFromCache
      ) begin 
     //这样的初始化方式是不是有问题?
     //有些需要保持的量因为无关的输入变化而无法保持?
-    readEnToCPU        = 0;
-    writeDoneToCPU     = 0;
-    rwToMem            = `IDEL;
-    havMsgToCache      = 0;
-    allowReadFromCache = 0; //也许这句不能有?
-    rmToCache          = 0;
-    wmToCache          = 0;
-    invToCache         = 0;
-    nextState          = state;
+    readEnToCPU      = 0;
+    writeDoneToCPU   = 0;
+    rwToMem          = `IDEL;
+    havMsgToCache    = 0;
+    allowReadToCache = 0; //也许这句不能有?
+    rmToCache        = 0;
+    wmToCache        = 0;
+    invToCache       = 0;
+    nextState        = state;
     if(reset) begin 
     end
     else begin 
@@ -107,9 +107,9 @@ always @(reset,
                     //write back
                     //broadcast read miss
                     //final state change to shared
-                    memRW         = `WT;
+                    rwToMem         = `WT;
                     addrToMem     = addr;
-                    dataToMem     = cacheLine
+                    dataToMem     = cacheLine;
                     havMsgToCache = 1;
                     rmToCache     = 1;
                     addrToCache   = addrFromCPU;
@@ -119,7 +119,7 @@ always @(reset,
                     //write back
                     //broadcast write miss
                     //final state remains modified
-                    memRW         = `WT;
+                    rwToMem         = `WT;
                     addrToMem     = addr;
                     dataToMem     = cacheLine;
                     havMsgToCache = 1;
@@ -158,10 +158,11 @@ always @(reset,
             `M_WM_WB: begin 
                 if(writeDoneFromMem) begin 
                     //mem,data,cpu,bus
-                    if(allowReadFromCache)
+                    if(allowReadFromCache) begin
                         rwToMem   = `RD;
                         addrToMem = addrFromCPU;
                         nextState = `M_WM_RD;
+                    end
                     else 
                         nextState = `M_WM_WB;
                 end
@@ -171,10 +172,11 @@ always @(reset,
             end
             `M_RM_WB:begin 
                 if(writeDoneFromMem) begin 
-                    if(allowReadFromCache) 
+                    if(allowReadFromCache) begin
                         rwToMem   = `RD;
                         addrToMem = addrFromCPU;
                         nextState = `M_RM_RD;
+                    end
                     else
                         nextState = `M_RM_WB;
                 end 
@@ -239,7 +241,7 @@ always @(reset,
                     rmToCache     = 1; //broad cast read miss
                     addrToCache   = addrFromCPU;
                     if(allowReadFromCache) begin 
-                        memRW         = `RD;
+                        rwToMem         = `RD;
                         addrToMem     = addrFromCPU;
                         nextState     = `S_RM_RD;
                     end
@@ -252,7 +254,7 @@ always @(reset,
                     wmToCache     = 1;
                     addrToCache   = addrFromCPU;
                     if(allowReadFromCache) begin 
-                        memRW     = `RD;
+                        rwToMem     = `RD;
                         addrToMem = addrFromCPU;
                         nextState = `S_WM_RD;
                     end 

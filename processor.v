@@ -30,7 +30,7 @@ module processor(
     input reset,
 
     //interact with real world 
-    input [`INSWIDTH-1:0]  ins,
+    input [`INSWIDTH-1:0]  instruction,
     output reg[`WORDWIDTH-1:0] data,
     output[`PCWIDTH-1:0]          pcCounter,
     //interact with memory, cache is transparent to CPU
@@ -47,8 +47,8 @@ reg[`WORDWIDTH-1:0]        regFile[`REGNUM-1:0];//register files
 assign pcCounter = counter;
 
 
-wire[`OPWIDTH-1:0] op        = instrction[(`INSWIDTH-1)-:`OPWIDTH];
-wire[`REGWIDTH-1:0] regIdx   = instrction[(`INSWIDTH-`OPWIDTH-1)-:`REGWIDTH];
+wire[`OPWIDTH-1:0] op        = instruction[(`INSWIDTH-1)-:`OPWIDTH];
+wire[`REGWIDTH-1:0] regIdx   = instruction[(`INSWIDTH-`OPWIDTH-1)-:`REGWIDTH];
 wire[`WORDWIDTH-1:0] insData = instruction[`INSWIDTH-`OPWIDTH-`REGWIDTH-1:0];
 
 always @(posedge clk) begin 
@@ -79,9 +79,9 @@ always @(posedge clk) begin
                 state           = `FETCH;
             end 
             `LD  : begin 
-                rwToMem     = `RD;
-                addrToCache = insData;
-                state       = `MEM;
+                rwToMem   = `RD;
+                addrToMem = insData;
+                state     = `MEM;
             end 
             `ST  : begin 
                 rwToMem   = `WT;
