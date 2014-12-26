@@ -14,7 +14,7 @@ reg clk;
 //真正仿真前, 代码, 尤其是cache的代码需要review一遍. 
 wire[`PCWIDTH-1:0] pc_proc1_code1,pc_proc2_code2;
 wire[`INSWIDTH-1:0] ins_code1_proc1,ins_code2_proc2;
-reg[`WORDWIDTH-1:0] dataOut1,dataOut2;
+wire[`WORDWIDTH-1:0] dataOut1,dataOut2;
 wire[`IOSTATEWIDTH-1:0] rw_P1_C1,rw_P2_C2;
 
 wire [`ADDRWIDTH-1:0]addr_P1_C1,addr_P2_C2;
@@ -87,7 +87,7 @@ cache C1(
     .writeDoneFromMem(wtEn_M_C1),
     .rwToMem(rw_C1_M),
     .addrToMem(addr_C1_M),
-    .datatomem(data_C1_M),
+    .dataToMem(data_C1_M),
 
     .havMsgFromCache(msg_C2_C1),
     .allowReadFromCache(allowRead_C2_C1),
@@ -118,7 +118,7 @@ cache C2(
     .writeDoneFromMem(wtEn_M_C2),
     .rwToMem(rw_C2_M),
     .addrToMem(addr_C2_M),
-    .datatomem(data_C2_M),
+    .dataToMem(data_C2_M),
 
     .havMsgFromCache(msg_C1_C2),
     .allowReadFromCache(allowRead_C1_C2),
@@ -154,16 +154,20 @@ memBus mb(
 //似乎对于reset和default值,还有些问题
 //initial and simulations
 always #5 clk = ~clk;
+
+initial begin 
+    $monitor("out1 = %b, out2 = %b",dataOut1,dataOut2);
+end
 initial begin 
     clk   = 0;
     reset = 0;
-    code1.code[0] = {`SET,`R0,`WORDWIDTH'd3}; //p1.r0 = 3
-    code1.code[1] = {`ST,`R0,`ADDRWIDTH'd0};  //mem[0] = p1.r0
+    code1.codes[0] = {`SET,`R0,`WORDWIDTH'd3}; //p1.r0 = 3
+    code1.codes[1] = {`ST,`R0,`ADDRWIDTH'd0};  //mem[0] = p1.r0
 
-    code2.code[0] = {`NOP,`R0,`WORDWIDTH'd0};
-    code2.code[1] = {`NOP,1'd0,16'd0};
-    code2.code[2] = {`LD,`R0,`ADDRWIDTH'd0};  //p2.r0 = mem[0];
-    codd2.code[3] = {`GET,`R0,16'd0};         //print p2.r0; should be 3
+    code2.codes[0] = {`NOP,`R0,`WORDWIDTH'd0};
+    code2.codes[1] = {`NOP,1'd0,16'd0};
+    code2.codes[2] = {`LD,`R0,`ADDRWIDTH'd0};  //p2.r0 = mem[0];
+    code2.codes[3] = {`GET,`R0,16'd0};         //print p2.r0; should be 3
     #5;
     reset = 1;
     #5;
