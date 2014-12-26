@@ -30,92 +30,92 @@ module processor(
     input reset,
 
     //interact with real world 
-    input [INSWIDTH-1:0]  ins,
-    output reg[WORDWIDTH-1:0] data,
-    output[PCWIDTH-1:0]          pcCounter,
+    input [`INSWIDTH-1:0]  ins,
+    output reg[`WORDWIDTH-1:0] data,
+    output[`PCWIDTH-1:0]          pcCounter,
     //interact with memory, cache is transparent to CPU
-    output reg[IOSTATEWIDTH-1:0] rwToMem,
-    output reg[ADDRWIDTH-1:0] addrToMem,
-    output reg[WORDWIDTH-1:0] dataToMem,
+    output reg[`IOSTATEWIDTH-1:0] rwToMem,
+    output reg[`ADDRWIDTH-1:0] addrToMem,
+    output reg[`WORDWIDTH-1:0] dataToMem,
     input wire rdEn,wtEn,
-    input wire[WORDWIDTH-1:0] dataFromMem
+    input wire[`WORDWIDTH-1:0] dataFromMem
 );
 
-reg[PCWIDTH-1:0]          counter;
-reg[CPUSTATENUMWIDTH-1:0] state;
-reg[WORDWIDTH-1:0]        regFile[REGNUM-1:0];//register files
+reg[`PCWIDTH-1:0]          counter;
+reg[`CPUSTATENUMWIDTH-1:0] state;
+reg[`WORDWIDTH-1:0]        regFile[`REGNUM-1:0];//register files
 assign pcCounter = counter;
 
 
-wire[OPWIDTH-1:0] op        = instrction[(INSWIDTH-1)-:OPWIDTH];
-wire[REGWIDTH-1:0] regIdx   = instrction[(INSWIDTH-OPWIDTH-1)-:REGWIDTH];
-wire[WORDWIDTH-1:0] insData = instruction[INSWIDTH-OPWIDTH-REGWIDTH-1:0];
+wire[`OPWIDTH-1:0] op        = instrction[(`INSWIDTH-1)-:`OPWIDTH];
+wire[`REGWIDTH-1:0] regIdx   = instrction[(`INSWIDTH-`OPWIDTH-1)-:`REGWIDTH];
+wire[`WORDWIDTH-1:0] insData = instruction[`INSWIDTH-`OPWIDTH-`REGWIDTH-1:0];
 
 always @(posedge clk) begin 
     if(reset) begin 
         data    = 0;
-        rwToMem = IDEL;
+        rwToMem = `IDEL;
         counter = 0;
-        state   = FETCH;
+        state   = `FETCH;
     end 
-    else if(state == ERR) begin 
-        state = ERR;
+    else if(state == `ERR) begin 
+        state = `ERR;
     end 
-    else if(state == FETCH) begin 
+    else if(state == `FETCH) begin 
         //counter,state,data,rwtomem,addrtomem,datatomem
         counter = counter + 1'b1;
-        state   = EXE;
-        rwToMem = IDEL;
+        state   = `EXE;
+        rwToMem = `IDEL;
     end 
-    else if(state == EXE) begin 
+    else if(state == `EXE) begin 
         case(op) 
-            NOP : begin 
-                rwToMem = IDEL;
-                state   = FETCH;
+            `NOP : begin 
+                rwToMem = `IDEL;
+                state   = `FETCH;
             end
-            SET : begin 
-                rwToMem         = IDEL;
+            `SET : begin 
+                rwToMem         = `IDEL;
                 regFile[regIdx] = insData;
-                state           = FETCH;
+                state           = `FETCH;
             end 
-            LD  : begin 
-                rwToMem     = RD;
+            `LD  : begin 
+                rwToMem     = `RD;
                 addrToCache = insData;
-                state       = MEM;
+                state       = `MEM;
             end 
-            ST  : begin 
-                rwToMem   = WT;
+            `ST  : begin 
+                rwToMem   = `WT;
                 addrToMem = insData;
                 dataToMem = regFile[regIdx];
             end
             default:
-                state = ERR;
+                state = `ERR;
         endcase
     end 
-    else if(state == MEM) begin 
+    else if(state == `MEM) begin 
         case(op) 
-            NOP,SET : begin 
-                state   = ERR;
+            `NOP,`SET : begin 
+                state   = `ERR;
             end
-            LD  : begin 
+            `LD  : begin 
                 if(! rdEn) 
-                    state = MEM;
+                    state = `MEM;
                 else begin 
                     regFile[regIdx] = dataFromMem;
-                    rwToMem         = IDEL;
-                    state           = FETCH;
+                    rwToMem         = `IDEL;
+                    state           = `FETCH;
                 end 
             end 
-            ST  : begin 
+            `ST  : begin 
                 if(! wtEn) 
-                    state = MEM;
+                    state = `MEM;
                 else begin 
-                    rwToMem = IDEL;
-                    state   = FETCH;
+                    rwToMem = `IDEL;
+                    state   = `FETCH;
                 end 
             end
             default:
-                state = ERR;
+                state = `ERR;
         endcase
     end 
 end 
