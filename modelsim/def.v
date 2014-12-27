@@ -5,20 +5,20 @@
 //需不需要为已经broad cast而其他cache还没有完成写回单独设置一个状态?
 //各种状态的WM_RD与RM_RD(inv,shared)似乎可以合并.
 `define STATEWIDTH 4
-`define ERROR      4'd0     //(done)
-`define MODIFIED   4'd1     //(done)
-`define M_SRM_WB   4'd2     //modified, snooped read miss,writing back
-`define M_SWM_WB   4'd3     //modified, snooped write miss, writing back
-`define M_WM_WB    4'd4     //modified, cpu write miss, writing back
-`define M_RM_WB    4'd5     //modified, cpu read miss, writing back
-`define M_WM_RD    4'd6     //modified, cpu write miss, finished writing back, other cache has write back its copy, reading
-`define M_RM_RD    4'd7     //modified, cpu read miss, finished writing back, other cache has write back its copy, reading
-`define SHARED     4'd8     //shared.
-`define S_RM_RD    4'd9     //shared, cpu read miss, other cache has write back its copy,reading
-`define S_WM_RD    4'd10    //shared, cpu write miss, other cache has wrtie back its copy,reading
-`define INVALID    4'd11    //INVALID
-`define I_RM_RD    4'd12    //invalid, cpu read miss, other cache has write back its copy,reading
-`define I_WM_RD    4'd13    //invalid, cpu write miss, other cache has write back its copy, reaading
+`define ERROR      4'h0     //(done)
+`define MODIFIED   4'h1     //(done)
+`define M_SRM_WB   4'h2     //modified, snooped read miss,writing back
+`define M_SWM_WB   4'h3     //modified, snooped write miss, writing back
+`define M_WM_WB    4'h4     //modified, cpu write miss, writing back
+`define M_RM_WB    4'h5     //modified, cpu read miss, writing back
+`define M_WM_RD    4'h6     //modified, cpu write miss, finished writing back, other cache has write back its copy, reading
+`define M_RM_RD    4'h7     //modified, cpu read miss, finished writing back, other cache has write back its copy, reading
+`define SHARED     4'h8     //shared.
+`define S_RM_RD    4'h9     //shared, cpu read miss, other cache has write back its copy,reading
+`define S_WM_RD    4'ha   //shared, cpu write miss, other cache has wrtie back its copy,reading
+`define INVALID    4'hb   //INVALID
+`define I_RM_RD    4'hc    //invalid, cpu read miss, other cache has write back its copy,reading
+`define I_WM_RD    4'hd    //invalid, cpu write miss, other cache has write back its copy, reaading
 
 `define IOSTATEWIDTH 2
 `define RD   2'd0
@@ -46,3 +46,14 @@
 `define REGNUM 4 //two register
 `define INSWIDTH 20 //(3+1+16)
 `define PCWIDTH 8
+
+
+`define CPUSTATENUM 3
+`define CPUSTATENUMWIDTH 2
+`define FETCH 2'd0
+`define EXE   2'd1
+`define MEM   2'd2
+`define ERR   2'd3
+
+
+`define MEMWORDS 32 //32 word * 2B/word

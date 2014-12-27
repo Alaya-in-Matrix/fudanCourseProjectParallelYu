@@ -156,7 +156,7 @@ memBus mb(
 always #5 clk = ~clk;
 
 initial begin 
-    $monitor("out1 = %b, out2 = %b",dataOut1,dataOut2);
+    $monitor($time, "clk = %d",clk);
 end
 initial begin 
     clk   = 0;
@@ -172,22 +172,8 @@ initial begin
     reset = 1;
     #5;
     reset = 0;
+    #1000 $stop;
 end
 endmodule
 
 //store instructions
-module codeRam(
-    input[`PCWIDTH-1:0] pc,
-    output reg[`INSWIDTH-1:0] ins
-);
-parameter CODESIZE = 16; //a progra could have at most 16 instructions
-reg[`INSWIDTH-1:0] codes[0:CODESIZE-1];
-always @(pc) begin 
-    if(pc >= CODESIZE) begin 
-        ins = {`NOP,18'd0}; //return nop
-    end
-    else begin 
-        ins = codes[pc];
-    end 
-end 
-endmodule

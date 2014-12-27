@@ -7,112 +7,134 @@ z2
 !i10e 25
 !i10f 100
 cModel Technology
-Z0 dE:/gitrepo/bitbucket/FudanCourseProject/parallel_yu/modelsim
+Z0 dE:/code/bitbucket/courseprojectparallel_yu_jing/modelsim
 vcache
-!s110 1419610828
+!s110 1419679129
 !i10b 1
-!s100 k1_J`ICR5Cc=V8JK`OfiL2
-IiWFJ_00DXzd>?>KEEXFhK3
+!s100 4bnjD6Jk4WbYg`m_>>9dO2
+IOCj79=T2WLeO?]^^l4G960
 Z1 VDg1SIo80bB@j0V0VzS_@n1
 R0
-w1419610814
-8E:/gitrepo/bitbucket/FudanCourseProject/parallel_yu/modelsim/cache.v
-FE:/gitrepo/bitbucket/FudanCourseProject/parallel_yu/modelsim/cache.v
+w1419678494
+8E:/code/bitbucket/courseprojectparallel_yu_jing/modelsim/cache.v
+FE:/code/bitbucket/courseprojectparallel_yu_jing/modelsim/cache.v
 L0 5
 Z2 OP;L;10.4;61
 r1
 !s85 0
 31
-!s108 1419610828.174000
-!s107 ./def.v|E:/gitrepo/bitbucket/FudanCourseProject/parallel_yu/modelsim/cache.v|
-!s90 -reportprogress|300|-work|work|E:/gitrepo/bitbucket/FudanCourseProject/parallel_yu/modelsim/cache.v|
+!s108 1419679129.812000
+!s107 ./def.v|E:/code/bitbucket/courseprojectparallel_yu_jing/modelsim/cache.v|
+!s90 -reportprogress|300|-work|work|E:/code/bitbucket/courseprojectparallel_yu_jing/modelsim/cache.v|
 !s101 -O0
 !i113 1
 Z3 o-work work -L mtiAvm -L mtiRnm -L mtiOvm -L mtiUvm -L mtiUPF -L infact -O0
 vcodeRam
-Z4 !s110 1419612657
+Z4 !s110 1419679130
 !i10b 1
-!s100 5127C=gf>fcej5fHe03@]2
-I_2A12Kn]H;R;[^Y<`oX7l0
+!s100 hZO`]J80ST4M^h8`OIf>O3
+Il1mIe9;HeTQYOVD]1hOM=0
 R1
 R0
-Z5 w1419612652
-Z6 8E:/gitrepo/bitbucket/FudanCourseProject/parallel_yu/modelsim/testBench.v
-Z7 FE:/gitrepo/bitbucket/FudanCourseProject/parallel_yu/modelsim/testBench.v
-L0 179
-R2
-r1
-!s85 0
-31
-Z8 !s108 1419612657.948000
-Z9 !s107 ./def.v|E:/gitrepo/bitbucket/FudanCourseProject/parallel_yu/modelsim/testBench.v|
-Z10 !s90 -reportprogress|300|-work|work|-L|mtiAvm|-L|mtiRnm|-L|mtiOvm|-L|mtiUvm|-L|mtiUPF|-L|infact|-O0|E:/gitrepo/bitbucket/FudanCourseProject/parallel_yu/modelsim/testBench.v|
-!s101 -O0
-!i113 1
-R3
-ncode@ram
-vmemBus
-!s110 1419610866
-!i10b 1
-!s100 2zJRN[aRQZ2=^Qhi>cEZD2
-IJ]4GIcRUzB;B54RnHfO302
-R1
-R0
-w1419606252
-8E:/gitrepo/bitbucket/FudanCourseProject/parallel_yu/modelsim/memBus.v
-FE:/gitrepo/bitbucket/FudanCourseProject/parallel_yu/modelsim/memBus.v
-L0 3
-R2
-r1
-!s85 0
-31
-!s108 1419610866.572000
-!s107 ./def.v|E:/gitrepo/bitbucket/FudanCourseProject/parallel_yu/modelsim/memBus.v|
-!s90 -reportprogress|300|-work|work|E:/gitrepo/bitbucket/FudanCourseProject/parallel_yu/modelsim/memBus.v|
-!s101 -O0
-!i113 1
-R3
-nmem@bus
-vprocessor
-!s110 1419611571
-!i10b 1
-!s100 @C=Kf8TzMdak;zi66amIU3
-I7NB?KDkY3MdV8b?b4B3991
-R1
-R0
-w1419611566
-8E:/gitrepo/bitbucket/FudanCourseProject/parallel_yu/modelsim/processor.v
-FE:/gitrepo/bitbucket/FudanCourseProject/parallel_yu/modelsim/processor.v
-L0 16
-R2
-r1
-!s85 0
-31
-!s108 1419611571.782000
-!s107 ./def.v|E:/gitrepo/bitbucket/FudanCourseProject/parallel_yu/modelsim/processor.v|
-!s90 -reportprogress|300|-work|work|E:/gitrepo/bitbucket/FudanCourseProject/parallel_yu/modelsim/processor.v|
-!s101 -O0
-!i113 1
-R3
-vtestBench
-R4
-!i10b 1
-!s100 lh:fS5YkXV5o_f=moI^7g2
-II8bkm4jQ`cXI3>RPC=<T[1
-R1
-R0
-R5
-R6
-R7
+w1419653292
+8E:/code/bitbucket/courseprojectparallel_yu_jing/modelsim/codeRam.v
+FE:/code/bitbucket/courseprojectparallel_yu_jing/modelsim/codeRam.v
 L0 2
 R2
 r1
 !s85 0
 31
-R8
-R9
-R10
+!s108 1419679130.015000
+!s107 ./def.v|E:/code/bitbucket/courseprojectparallel_yu_jing/modelsim/codeRam.v|
+!s90 -reportprogress|30|-work|work|E:/code/bitbucket/courseprojectparallel_yu_jing/modelsim/codeRam.v|
+!s101 -O0
+!i113 1
+R3
+ncode@ram
+vmemBus
+R4
+!i10b 1
+!s100 EmP1>J1RJAELe74`[H;OT1
+IgAbMTm<eMNKfU]nK77^Rj3
+R1
+R0
+w1419678007
+8E:/code/bitbucket/courseprojectparallel_yu_jing/modelsim/memBus.v
+FE:/code/bitbucket/courseprojectparallel_yu_jing/modelsim/memBus.v
+L0 2
+R2
+r1
+!s85 0
+31
+!s108 1419679130.436000
+!s107 ./def.v|E:/code/bitbucket/courseprojectparallel_yu_jing/modelsim/memBus.v|
+!s90 -reportprogress|30|-work|work|E:/code/bitbucket/courseprojectparallel_yu_jing/modelsim/memBus.v|
+!s101 -O0
+!i113 1
+R3
+nmem@bus
+vprocessor
+R4
+!i10b 1
+!s100 >kLnP[aWX[d=83>TL0LZf2
+I8og]1BHH?^435WL4]ncT12
+R1
+R0
+w1419662283
+8E:/code/bitbucket/courseprojectparallel_yu_jing/modelsim/processor.v
+FE:/code/bitbucket/courseprojectparallel_yu_jing/modelsim/processor.v
+L0 10
+R2
+r1
+!s85 0
+31
+!s108 1419679130.654000
+!s107 ./def.v|E:/code/bitbucket/courseprojectparallel_yu_jing/modelsim/processor.v|
+!s90 -reportprogress|30|-work|work|E:/code/bitbucket/courseprojectparallel_yu_jing/modelsim/processor.v|
+!s101 -O0
+!i113 1
+R3
+vtestBench
+!s110 1419679131
+!i10b 1
+!s100 lWd>`E7c0[W0DkA8L5CU]1
+Ib>4@mEdH;N5<TXPEjQ;8B3
+R1
+R0
+w1419656137
+8E:/code/bitbucket/courseprojectparallel_yu_jing/modelsim/testBench.v
+FE:/code/bitbucket/courseprojectparallel_yu_jing/modelsim/testBench.v
+L0 2
+R2
+r1
+!s85 0
+31
+!s108 1419679131.154000
+!s107 ./def.v|E:/code/bitbucket/courseprojectparallel_yu_jing/modelsim/testBench.v|
+!s90 -reportprogress|30|-work|work|E:/code/bitbucket/courseprojectparallel_yu_jing/modelsim/testBench.v|
 !s101 -O0
 !i113 1
 R3
 ntest@bench
+vtestCodeRam
+R4
+!i10b 1
+!s100 SfoV;?cKniOEzWC_8l`dL2
+IOHSCozF@>Vz@GFV>bWf0M0
+R1
+R0
+w1419679117
+8E:/code/bitbucket/courseprojectparallel_yu_jing/modelsim/tbCodeRam.v
+FE:/code/bitbucket/courseprojectparallel_yu_jing/modelsim/tbCodeRam.v
+L0 2
+R2
+r1
+!s85 0
+31
+!s108 1419679130.873000
+!s107 ./def.v|E:/code/bitbucket/courseprojectparallel_yu_jing/modelsim/tbCodeRam.v|
+!s90 -reportprogress|30|-work|work|E:/code/bitbucket/courseprojectparallel_yu_jing/modelsim/tbCodeRam.v|
+!s101 -O0
+!i113 1
+R3
+ntest@code@ram

@@ -7,12 +7,6 @@
 */
 
 `include "./def.v"
-`define CPUSTATENUM 3
-`define CPUSTATENUMWIDTH 2
-`define FETCH 2'd0
-`define EXE   2'd1
-`define MEM   2'd2
-`define ERR   2'd3
 module processor(
     input clk,
     input reset,
@@ -26,32 +20,46 @@ module processor(
     output reg[`ADDRWIDTH-1:0] addrToMem,
     output reg[`WORDWIDTH-1:0] dataToMem,
     input wire rdEn,wtEn,
-    input wire[`WORDWIDTH-1:0] dataFromMem
-);
+    input wire[`WORDWIDTH-1:0] dataFromMem,
 
+    //for debug purpose
+    output [`CPUSTATENUMWIDTH-1:0] cpuState,
+    output [`REGWIDTH-1:0] regId,
+    output [`WORDWIDTH-1:0] r0,
+    output [`WORDWIDTH-1:0] r1
+);
 reg[`PCWIDTH-1:0]          counter;
 reg[`CPUSTATENUMWIDTH-1:0] state;
 reg[`WORDWIDTH-1:0]        regFile[`REGNUM-1:0];//register files
-assign pcCounter = counter;
+
 
 
 wire[`OPWIDTH-1:0] op        = instruction[(`INSWIDTH-1)-:`OPWIDTH];
 wire[`REGWIDTH-1:0] regIdx   = instruction[(`INSWIDTH-`OPWIDTH-1)-:`REGWIDTH];
 wire[`WORDWIDTH-1:0] insData = instruction[`INSWIDTH-`OPWIDTH-`REGWIDTH-1:0];
 
+assign pcCounter = counter;
+assign cpuState  = state;
+assign r0        = regFile[0];
+assign r1        = regFile[1];
+assign regId     = regIdx;
+initial begin 
+    $monitor($time," state of CPU is %d",state);
+end
 always @(posedge clk) begin 
     if(reset) begin 
         data    = 0;
         rwToMem = `IDEL;
         counter = 0;
         state   = `FETCH;
+        regFile[0] = 0;
+        regFile[1] = 0;
     end 
     else if(state == `ERR) begin 
         state = `ERR;
     end 
     else if(state == `FETCH) begin 
         //counter,state,data,rwtomem,addrtomem,datatomem
-        counter = counter + 1'b1;
         state   = `EXE;
         rwToMem = `IDEL;
     end 
@@ -59,16 +67,19 @@ always @(posedge clk) begin
         case(op) 
             `NOP : begin 
                 rwToMem = `IDEL;
+                counter = counter + 1'b1;
                 state   = `FETCH;
             end
             `SET : begin 
                 rwToMem         = `IDEL;
                 regFile[regIdx] = insData;
+                counter         = counter + 1'b1;
                 state           = `FETCH;
             end 
             `GET : begin
                 rwToMem = `IDEL;
                 data    = regFile[regIdx];
+                counter = counter + 1'b1;
                 state   = `FETCH;
             end
             `LD  : begin 
@@ -80,6 +91,7 @@ always @(posedge clk) begin
                 rwToMem   = `WT;
                 addrToMem = insData;
                 dataToMem = regFile[regIdx];
+                state     = `MEM;
             end
             default:
                 state = `ERR;
@@ -96,6 +108,7 @@ always @(posedge clk) begin
                 else begin 
                     regFile[regIdx] = dataFromMem;
                     rwToMem         = `IDEL;
+                    counter         = counter + 1'b1;
                     state           = `FETCH;
                 end 
             end 
@@ -104,6 +117,7 @@ always @(posedge clk) begin
                     state = `MEM;
                 else begin 
                     rwToMem = `IDEL;
+                    counter = counter + 1'b1;
                     state   = `FETCH;
                 end 
             end
