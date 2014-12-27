@@ -33,19 +33,20 @@
 `define NOERR             4'd3
 `define ERR_CPUOP         4'd4
 
-`define LD   3'd0
-`define ST   3'd1
-`define NOP  3'd2
-`define SET  3'd3
-`define GET  3'd4 //相当于Print函数, 用于传递寄存器数据到外部
 
-`define OPWIDTH 3 //we have 5 operations(ld,st,nop,end,set)
-`define REGWIDTH 1 //one bit to specify register
-`define R0 1'd0
-`define R1 1'd1
+`define INSWIDTH 24 //(4+4+16)
+`define OPWIDTH 4 //we have 5 operations(ld,st,nop,end,set)
+`define REGWIDTH 4 //one bit to specify register
+`define RESTINSWIDTH 16
+`define R0 4'd0
+`define R1 4'd1
 `define REGNUM 4 //two register
-`define INSWIDTH 20 //(3+1+16)
 `define PCWIDTH 8
+`define LD   4'd0
+`define ST   4'd1
+`define NOP  4'd2
+`define SET  4'd3
+`define GET  4'd4 //相当于Print函数, 用于传递寄存器数据到外部
 
 
 `define CPUSTATENUM 3

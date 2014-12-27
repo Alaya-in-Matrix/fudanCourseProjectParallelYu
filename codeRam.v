@@ -8,7 +8,7 @@ reg[`INSWIDTH-1:0] codes[0:CODESIZE-1];
 
 always @(pc) begin 
     if(pc >= CODESIZE) begin 
-        ins = {`NOP,18'd0}; //return nop
+        ins = {`NOP,`R0,`RESTINSWIDTH'd0}; //return nop
     end
     else begin 
         ins = codes[pc];

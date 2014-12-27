@@ -29,7 +29,6 @@ module memBus(
 reg[`IOSTATEWIDTH-1:0]  rwToMem;//if rwtomem is not idel, then it means mem is being accessed
 reg[`ADDRWIDTH-1:0]     addrToMem;
 reg[`WORDWIDTH-1:0]     dataToMem;
-reg[`WORDWIDTH-1:0]     dataFromMem;
 reg[7:0] delay;//128 delay
 reg[`WORDWIDTH-1:0] mem[0:`MEMWORDS-1];
 
@@ -47,10 +46,10 @@ initial begin
 end
 always @(posedge clk) begin 
     if(reset)begin 
-        rdEnToCacheA   = 1;
-        wbDoneToCacheA = 1;
-        rdEnToCacheB   = 1;
-        wbDoneToCacheB = 1;
+        rdEnToCacheA   = 0;
+        wbDoneToCacheA = 0;
+        rdEnToCacheB   = 0;
+        wbDoneToCacheB = 0;
         rwToMem        = `IDEL;
         delay          = MEMDELAY;
         mem[0] = 0;
@@ -60,21 +59,17 @@ always @(posedge clk) begin
     end
     else begin 
         if(rwToMem == `IDEL) begin 
+            rdEnToCacheA   = 0;
+            wbDoneToCacheA = 0;
+            rdEnToCacheB   = 0;
+            wbDoneToCacheB = 0;
             if(rwFromCacheA != `IDEL) begin 
-                rdEnToCacheA   = 0;
-                wbDoneToCacheA = 0;
-                rdEnToCacheB   = 0;
-                wbDoneToCacheB = 0;
                 chipSelect     = CA;
                 rwToMem        = rwFromCacheA;
                 addrToMem      = addrFromCacheA;
                 dataToMem      = dataFromCacheA;
             end
             else if(rwFromCacheB != `IDEL) begin 
-                rdEnToCacheA   = 0;
-                wbDoneToCacheA = 0;
-                rdEnToCacheB   = 0;
-                wbDoneToCacheB = 0;
                 chipSelect     = CB;
                 rwToMem        = rwFromCacheB;
                 addrToMem      = addrFromCacheB;
@@ -89,16 +84,14 @@ always @(posedge clk) begin
                 rwToMem = `IDEL;
                 delay   = MEMDELAY;
                 if(chipSelect == CA) begin 
-                    dataToCacheA = dataFromMem;
+                    dataToCacheA   = mem[addrToMem];
                     rdEnToCacheA   = 1;
                     wbDoneToCacheA = 1;
-                    rdEnToCacheB   = 1;
-                    wbDoneToCacheB = 1;
                 end
                 else begin 
-                    dataToCacheB = dataFromMem;
-                    rdEnToCacheA   = 1;
-                    wbDoneToCacheA = 1;
+                    dataToCacheB   = mem[addrToMem];
+                    /* rdEnToCacheA   = 1; */
+                    /* wbDoneToCacheA = 1; */
                     rdEnToCacheB   = 1;
                     wbDoneToCacheB = 1;
                 end
@@ -112,10 +105,14 @@ always @(posedge clk) begin
                 rwToMem = `IDEL;
                 delay   = MEMDELAY;
                 mem[addrToMem] = dataToMem;
-                rdEnToCacheA   = 1;
-                wbDoneToCacheA = 1;
-                rdEnToCacheB   = 1;
-                wbDoneToCacheB = 1;
+                if(chipSelect == CA) begin
+                    rdEnToCacheA   = 1;
+                    wbDoneToCacheA = 1;
+                end
+                else begin
+                    rdEnToCacheB   = 1;
+                    wbDoneToCacheB = 1;
+                end
             end 
             else begin 
                 delay = delay -1;
