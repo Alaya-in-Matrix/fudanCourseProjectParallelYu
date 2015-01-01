@@ -43,15 +43,12 @@ assign cpuState  = state;
 assign r0        = regFile[0];
 assign r1        = regFile[1];
 assign regId     = regIdx;
-initial begin 
-    $monitor($time," state of CPU is %d",state);
-end
 always @(posedge clk) begin 
     if(reset) begin 
-        data    = 0;
-        rwToMem = `IDEL;
-        counter = 0;
-        state   = `FETCH;
+        data       = 0;
+        rwToMem    = `IDEL;
+        counter    = 0;
+        state      = `FETCH;
         regFile[0] = 0;
         regFile[1] = 0;
     end 
@@ -68,6 +65,8 @@ always @(posedge clk) begin
             `NOP : begin 
                 rwToMem = `IDEL;
                 counter = counter + 1'b1;
+                regFile[0] = regFile[0];
+                regFile[1] = regFile[1];
                 state   = `FETCH;
             end
             `SET : begin 

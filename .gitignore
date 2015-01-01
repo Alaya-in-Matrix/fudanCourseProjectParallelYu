@@ -3,8 +3,6 @@
 *.swp
 *.exe
 *.o
-*.ppt
-*.pdf
 verilog_learn/
 diff
 ignore/

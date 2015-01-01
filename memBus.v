@@ -36,14 +36,12 @@ parameter MEMDELAY = 5;
 parameter CA       = 1'b0;
 parameter CB       = 1'b1;
 reg chipSelect;
+reg prefer;
 
 assign debugRwToMem = rwToMem;
 assign debugDelay   = delay;
 
 //似乎目前是个摩尔模型, 不如改成米利模型, 同cache统一起来.
-initial begin
-    $monitor($time, "mem[1]=%b",mem[1]);
-end
 always @(posedge clk) begin 
     if(reset)begin 
         rdEnToCacheA   = 0;
@@ -56,6 +54,7 @@ always @(posedge clk) begin
         mem[1] = 0;
         mem[2] = 0;
         mem[3] = 0;
+        prefer = CA; //默认cache的优先级较高
     end
     else begin 
         if(rwToMem == `IDEL) begin 
@@ -63,20 +62,39 @@ always @(posedge clk) begin
             wbDoneToCacheA = 0;
             rdEnToCacheB   = 0;
             wbDoneToCacheB = 0;
-            if(rwFromCacheA != `IDEL) begin 
-                chipSelect     = CA;
-                rwToMem        = rwFromCacheA;
-                addrToMem      = addrFromCacheA;
-                dataToMem      = dataFromCacheA;
+            if(prefer == CA) begin
+                if(rwFromCacheA != `IDEL) begin 
+                    chipSelect     = CA;
+                    rwToMem        = rwFromCacheA;
+                    addrToMem      = addrFromCacheA;
+                    dataToMem      = dataFromCacheA;
+                end
+                else if(rwFromCacheB != `IDEL) begin 
+                    chipSelect     = CB;
+                    rwToMem        = rwFromCacheB;
+                    addrToMem      = addrFromCacheB;
+                    dataToMem      = dataFromCacheB;
+                end
+                else begin 
+                    rwToMem = `IDEL;
+                end
             end
-            else if(rwFromCacheB != `IDEL) begin 
-                chipSelect     = CB;
-                rwToMem        = rwFromCacheB;
-                addrToMem      = addrFromCacheB;
-                dataToMem      = dataFromCacheB;
-            end
-            else begin 
-                rwToMem = `IDEL;
+            else begin //prefer is CB
+                if(rwFromCacheB != `IDEL) begin 
+                    chipSelect     = CB;
+                    rwToMem        = rwFromCacheB;
+                    addrToMem      = addrFromCacheB;
+                    dataToMem      = dataFromCacheB;
+                end
+                else if(rwFromCacheA != `IDEL) begin 
+                    chipSelect     = CA;
+                    rwToMem        = rwFromCacheA;
+                    addrToMem      = addrFromCacheA;
+                    dataToMem      = dataFromCacheA;
+                end
+                else begin 
+                    rwToMem = `IDEL;
+                end
             end
         end
         else if(rwToMem ==`RD) begin 
@@ -87,13 +105,13 @@ always @(posedge clk) begin
                     dataToCacheA   = mem[addrToMem];
                     rdEnToCacheA   = 1;
                     wbDoneToCacheA = 1;
+                    prefer         = CB;
                 end
                 else begin 
                     dataToCacheB   = mem[addrToMem];
-                    /* rdEnToCacheA   = 1; */
-                    /* wbDoneToCacheA = 1; */
                     rdEnToCacheB   = 1;
                     wbDoneToCacheB = 1;
+                    prefer         = CA;
                 end
             end
             else begin 
@@ -108,10 +126,12 @@ always @(posedge clk) begin
                 if(chipSelect == CA) begin
                     rdEnToCacheA   = 1;
                     wbDoneToCacheA = 1;
+                    prefer         = CB;
                 end
                 else begin
                     rdEnToCacheB   = 1;
                     wbDoneToCacheB = 1;
+                    prefer         = CA;
                 end
             end 
             else begin 

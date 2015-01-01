@@ -5,10 +5,10 @@ module codeRam(
 );
 parameter CODESIZE = 8; //a progra could have at most 8 instructions
 reg[`INSWIDTH-1:0] codes[0:CODESIZE-1];
-
+reg[3:0] codeSize;
 always @(pc) begin 
-    if(pc >= CODESIZE) begin 
-        ins = {`NOP,`R0,`RESTINSWIDTH'd0}; //return nop
+    if(pc >= codeSize) begin 
+        ins = 0; //return nop
     end
     else begin 
         ins = codes[pc];

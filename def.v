@@ -42,11 +42,11 @@
 `define R1 4'd1
 `define REGNUM 4 //two register
 `define PCWIDTH 8
-`define LD   4'd0
-`define ST   4'd1
-`define NOP  4'd2
+`define NOP  4'd0
+`define LD   4'd1
+`define ST   4'd2
 `define SET  4'd3
-`define GET  4'd4 //相当于Print函数, 用于传递寄存器数据到外部
+`define GET  4'd4
 
 
 `define CPUSTATENUM 3

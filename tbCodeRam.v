@@ -20,6 +20,7 @@ wire[`ADDRWIDTH-1:0] addr_C1_M,addr_C2_M;
 wire[`WORDWIDTH-1:0] data_C1_M,data_C2_M;
 wire msg_C2_C1,msg_C1_C2;
 wire allowRead_C2_C1,allowRead_C1_C2;
+wire [`ADDRWIDTH-1:0] allowReadAddr_C1_C2,allowReadAddr_C2_C1;
 wire[`ADDRWIDTH-1:0] addr_C2_C1,addr_C1_C2;
 wire rm_C2_C1,rm_C1_C2,wm_C2_C1,wm_C1_C2,inv_C1_C2,inv_C2_C1;
 
@@ -52,7 +53,7 @@ processor P1(
     .dataFromMem(data_C1_P1),
     .cpuState(stateP1),
     .r0(r0P1),
-    .r1(r1P2),
+    .r1(r1P1),
     .regId(regIdxP1)
 );
 processor P2(
@@ -96,12 +97,14 @@ cache C1(
 
     .havMsgFromCache(msg_C2_C1),
     .allowReadFromCache(allowRead_C2_C1),
+    .allowReadFromCacheAddr(allowReadAddr_C2_C1),
     .addrFromCache(addr_C2_C1),
     .rmFromCache(rm_C2_C1),
     .wmFromCache(wm_C2_C1),
     .invFromCache(inv_C2_C1),
     .havMsgToCache(msg_C1_C2),
     .allowReadToCache(allowRead_C1_C2),
+    .allowReadToCacheAddr(allowReadAddr_C1_C2),
     .addrToCache(addr_C1_C2),
     .rmToCache(rm_C1_C2),
     .wmToCache(wm_C1_C2),
@@ -131,12 +134,14 @@ cache C2(
 
     .havMsgFromCache(msg_C1_C2),
     .allowReadFromCache(allowRead_C1_C2),
+    .allowReadFromCacheAddr(allowReadAddr_C1_C2),
     .addrFromCache(addr_C1_C2),
     .rmFromCache(rm_C1_C2),
     .wmFromCache(wm_C1_C2),
     .invFromCache(inv_C1_C2),
     .havMsgToCache(msg_C2_C1),
     .allowReadToCache(allowRead_C2_C1),
+    .allowReadToCacheAddr(allowReadAddr_C2_C1),
     .addrToCache(addr_C2_C1),
     .rmToCache(rm_C2_C1),
     .wmToCache(wm_C2_C1),
@@ -170,26 +175,101 @@ memBus mb(
     .debugRwToMem(debugRwToMem),
     .debugDelay(debugDelay)
 );
-initial begin
-    $monitor($time," adrTomMe = %b",addr_P1_C1);
-end
-
-`define M0 `WORDWIDTH'd0
 initial begin 
-    clk = 1'b0;
-    reset = 1'b0;
-    code1.codes[0] = {`SET,`R0,`WORDWIDTH'd3}; //p1.r0 = 3
-    code1.codes[1] = {`ST,`R0,`ADDRWIDTH'd0};  //mem[0] = p1.r0, write miss
-    code1.codes[2] = {`NOP,`R0,`WORDWIDTH'd0};
-
-    code2.codes[0] = {`SET,`R0,`WORDWIDTH'd4}; //p1.r0 = 3
-    code2.codes[1] = {`NOP,`R0,`WORDWIDTH'd0};
-    code2.codes[2] = {`ST,`R0,`ADDRWIDTH'd0};  //mem[0] = p1.r0, write miss
-
-
-    #5 reset = 1'b1;
+    clk            = 1'b0;
+    reset          = 1'b0;
+    code1.codeSize = 3;
+    code2.codeSize = 3;
+    code1.codes[0] = {`SET, `R0,    `WORDWIDTH'd3}; //p1.r0 = 3
+    code1.codes[1] = {`ST,  `R0,    `ADDRWIDTH'd0};  //mem[0] = p1.r0, write miss
+    code1.codes[2] = {`NOP, `R0,    `WORDWIDTH'd0};
+    code2.codes[0] = {`SET, `R0,    `WORDWIDTH'd4}; //p1.r0 = 3
+    code2.codes[1] = {`NOP, `R0,    `WORDWIDTH'd0};
+    code2.codes[2] = {`ST,  `R0,    `ADDRWIDTH'd0};  //mem[0] = p1.r0, write miss
+    #5 reset  = 1'b1;
     #17 reset = 1'b0;
-    #2000 $stop;
+    #1000;
+    $display("Write After Write");
+    $display("time:%d,P1.r0:%d,C1.cachLine:%d,C1.state:%h", $time,P1.regFile[0],C1.cacheLine, C1.state);
+    $display("time:%d,P2.r0:%d,C2.cachLine:%d,C2.state:%h", $time,P2.regFile[0],C2.cacheLine, C2.state);
+    $display("mem[0]:%d", mb.mem[0]);
+    $display("___________________________________________________");
+    code1.codeSize = 3;
+    code2.codeSize = 3;
+    code1.codes[0] = {`SET, `R0,    `WORDWIDTH'd3}; //p1.r0 = 3
+    code1.codes[1] = {`ST,  `R0,    `ADDRWIDTH'd0};  //mem[0] = p1.r0, write miss
+    code1.codes[2] = {`NOP, `R0,    `WORDWIDTH'd0};
+    code2.codes[0] = {`SET, `R0,    `WORDWIDTH'd4}; //p1.r0 = 3
+    code2.codes[1] = {`NOP, `R0,    `WORDWIDTH'd0};
+    code2.codes[2] = {`LD,  `R0,    `ADDRWIDTH'd0};  //mem[0] = p1.r0, write miss
+    reset          = 1'b1;
+    #20 reset      = 1'b0;
+    #1000;
+    $display("Read After Write");
+    $display("time:%d,P1.r0:%d,C1.cachLine:%d,C1.state:%h",$time,P1.regFile[0],C1.cacheLine, C1.state);
+    $display("time:%d,P2.r0:%d,C2.cachLine:%d,C2.state:%h",$time,P2.regFile[0],C2.cacheLine, C2.state);
+    $display("mem[0]:%d", mb.mem[0]);
+    $display("___________________________________________________");
+    #1500;
+    code1.codeSize = 4;
+    code2.codeSize = 3;
+    code1.codes[0] = {`SET, `R0,    `WORDWIDTH'd3}; //p1.r0 = 3
+    code1.codes[1] = {`ST,  `R0,    `ADDRWIDTH'd0};  //mem[0] = p1.r0, write miss
+    code1.codes[2] = {`NOP, `R0,    `WORDWIDTH'd0};
+    code1.codes[3] = {`LD,  `R0,    `WORDWIDTH'd0};
+    code2.codes[0] = {`SET, `R0,    `WORDWIDTH'd4}; //p1.r0 = 3
+    code2.codes[1] = {`NOP, `R0,    `WORDWIDTH'd0};
+    code2.codes[2] = {`LD,  `R0,    `ADDRWIDTH'd0};  //mem[0] = p1.r0, write miss
+    reset          = 1'b1;
+    #20 reset      = 1'b0;
+    #1500;
+    $display("Read After Read");
+    $display("time:%d,P1.r0:%d,C1.cachLine:%d,C1.state:%h",$time,P1.regFile[0],C1.cacheLine, C1.state);
+    $display("time:%d,P2.r0:%d,C2.cachLine:%d,C2.state:%h",$time,P2.regFile[0],C2.cacheLine, C2.state);
+    $display("mem[0]:%d", mb.mem[0]);
+    $display("___________________________________________________");
+    #1500;
+    code1.codeSize = 4;
+    code2.codeSize = 5;
+    code1.codes[0] = {`SET, `R0,    `WORDWIDTH'd3}; //p1.r0 = 3
+    code1.codes[1] = {`ST,  `R0,    `ADDRWIDTH'd0};  //mem[0] = p1.r0, write miss
+    code1.codes[2] = {`NOP, `R0,    `WORDWIDTH'd0};
+    code1.codes[3] = {`LD,  `R0,    `WORDWIDTH'd0};
+    code2.codes[0] = {`SET, `R0,    `WORDWIDTH'd4}; //p1.r0 = 3
+    code2.codes[1] = {`NOP, `R0,    `WORDWIDTH'd0};
+    code2.codes[2] = {`NOP, `R0,    `WORDWIDTH'd0};
+    code2.codes[3] = {`NOP, `R0,    `WORDWIDTH'd0};
+    code2.codes[4] = {`ST,  `R0,    `ADDRWIDTH'd0};
+    reset          = 1'b1;
+    #20 reset      = 1'b0;
+    #2500;
+    $display("Special Read After Write");
+    $display("time:%d,P1.r0:%d,C1.cachLine:%d,C1.state:%h",$time,P1.regFile[0],C1.cacheLine, C1.state);
+    $display("time:%d,P2.r0:%d,C2.cachLine:%d,C2.state:%h",$time,P2.regFile[0],C2.cacheLine, C2.state);
+    $display("mem[0]:%d", mb.mem[0]);
+    $display("___________________________________________________");
+    #1500;
+    reset          = 1'b1;
+    #20 reset      = 1'b0;
+    code1.codeSize = 4;
+    code2.codeSize = 0;
+    code1.codes[0] = {`SET, `R0,    `WORDWIDTH'd3}; //p1.r0 = 3
+    code1.codes[1] = {`ST,  `R0,    `ADDRWIDTH'd0};  //mem[0] = p1.r0, write miss
+    code1.codes[2] = {`NOP, `R0,    `WORDWIDTH'd0};
+    code1.codes[3] = {`LD,  `R0,    `WORDWIDTH'd0};
+    #500;
+    P2.counter     = 0;
+    code2.codeSize = 3;
+    code2.codes[0] = {`SET, `R0,    `WORDWIDTH'd4}; //p1.r0 = 3
+    code2.codes[1] = {`NOP, `R0,    `WORDWIDTH'd0};
+    code2.codes[2] = {`ST,  `R0,    `ADDRWIDTH'd0};
+    #2500;
+    $display("Write After Read");
+    $display("time:%d,P1.r0:%d,C1.cachLine:%d,C1.state:%h",$time,P1.regFile[0],C1.cacheLine, C1.state);
+    $display("time:%d,P2.r0:%d,C2.cachLine:%d,C2.state:%h",$time,P2.regFile[0],C2.cacheLine, C2.state);
+    $display("mem[0]:%d", mb.mem[0]);
+    $display("___________________________________________________");
+    $stop;
 end
-always #10 clk = ~clk;
+always #5 clk = ~clk;
 endmodule
