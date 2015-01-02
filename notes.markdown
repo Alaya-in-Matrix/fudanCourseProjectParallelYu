@@ -11,3 +11,5 @@
 
 * 指令集需要介绍
 * 两条指令同步, 需要介绍(为何不同步,CUDA,SP)
+* codeRam其实是code rom
+* 专门为memory设置原子性的exchange操作如何?

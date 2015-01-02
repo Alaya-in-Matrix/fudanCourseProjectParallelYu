@@ -210,15 +210,15 @@ always @(posedge clk) begin
             end
             `M_SRM_WB: begin 
                 if(memEn) begin 
-                    rwToMem = `IDEL;
-                    if(rwFromCPU == `IDEL) begin 
-                        cacheEnToCPU = 1;
-                    end
-                    else begin 
-                        cacheEnToCPU = 0;
-                    end
+                    rwToMem          = `IDEL;
                     allowReadToCache = 1;
                     state            = `SHARED;
+                    if(rwFromCPU != `IDEL && (rm || wm)) begin 
+                        stall = 1;
+                    end 
+                    else begin 
+                        stall = 0;
+                    end
                 end
                 else begin 
                     cacheEnToCPU     = 0;
@@ -228,16 +228,10 @@ always @(posedge clk) begin
             end
             `M_SWM_WB: begin 
                 if(memEn) begin 
-                    rwToMem = `IDEL;
-                    if(rwFromCPU == `IDEL) begin
-                        cacheEnToCPU = 1;
-                    end 
-                    else begin 
-                        cacheEnToCPU = 0;
-                    end
+                    rwToMem          = `IDEL;
                     state            = `INVALID;
                     allowReadToCache = 1;
-                    if(rwFromCPU != `IDEL) begin 
+                    if(rwFromCPU != `IDEL && (rm || wm)) begin 
                         stall = 1;
                     end 
                     else begin 
