@@ -1,0 +1,4 @@
+verilog work "processor.v"
+verilog work "memBus.v"
+verilog work "codeRam.v"
+verilog work "scheme.vf"

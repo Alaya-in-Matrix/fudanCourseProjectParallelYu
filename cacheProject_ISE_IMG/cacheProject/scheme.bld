@@ -1,0 +1,36 @@
+Release 10.1.03 ngdbuild K.39 (lin64)
+Copyright (c) 1995-2008 Xilinx, Inc.  All rights reserved.
+
+Command Line: /export/EDAs/xilinx/ISE10/ISE/bin/lin64/unwrapped/ngdbuild -ise
+/export/home/wllv/cacheProject/cacheProject.ise -intstyle ise -dd _ngo -nt
+timestamp -i -p xa2s50e-tq144-6 scheme.ngc scheme.ngd
+
+Reading NGO file "/export/home/wllv/cacheProject/scheme.ngc" ...
+Loading design module "/export/home/wllv/cacheProject/scheme.ngc"...
+WARNING:NgdBuild:578 - Design contains no instances.
+Gathering constraint information from source properties...
+Done.
+
+Resolving constraint associations...
+Checking Constraint Associations...
+Done...
+Checking Partitions ...
+
+Checking expanded design ...
+
+Partition Implementation Status
+-------------------------------
+
+  No Partitions were found in this design.
+
+-------------------------------
+
+NGDBUILD Design Results Summary:
+  Number of errors:     0
+  Number of warnings:   1
+
+Total memory usage is 207264 kilobytes
+
+Writing NGD file "scheme.ngd" ...
+
+Writing NGDBUILD log file "scheme.bld"...

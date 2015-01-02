@@ -1,0 +1,6 @@
+CommandLine
+/export/EDAs/xilinx/ISE10/ISE/bin/lin64/unwrapped/xst -ise /export/home/wllv/cacheProject/cacheProject.ise -intstyle ise -ifn /export/home/wllv/cacheProject/scheme.xst -ofn /export/home/wllv/cacheProject/scheme.syr -finalclean 1
+s
+FormatString
+xst [-ifn <InputFile>] [-ofn <OutputFile>] [-ise <iseProjectFile>] [--quiet] [-intstyle <Style>] [--deb <DebugLevel>] [--finalclean <Clean>] [--PcubeFlow] [--globOptFlow] [--XstNtrc]
+s

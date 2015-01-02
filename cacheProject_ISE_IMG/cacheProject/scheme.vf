@@ -1,0 +1,171 @@
+////////////////////////////////////////////////////////////////////////////////
+// Copyright (c) 1995-2008 Xilinx, Inc.  All rights reserved.
+////////////////////////////////////////////////////////////////////////////////
+//   ____  ____ 
+//  /   /\/   / 
+// /___/  \  /    Vendor: Xilinx 
+// \   \   \/     Version : 10.1.03
+//  \   \         Application : sch2verilog
+//  /   /         Filename : scheme.vf
+// /___/   /\     Timestamp : 01/02/2015 16:50:32
+// \   \  /  \ 
+//  \___\/\___\ 
+//
+//Command: /export/EDAs/xilinx/ISE10/ISE/bin/lin64/unwrapped/sch2verilog -intstyle ise -family aspartan2e -w /export/home/wllv/cacheProject/scheme.sch scheme.vf
+//Design Name: scheme
+//Device: aspartan2e
+//Purpose:
+//    This verilog netlist is translated from an ECS schematic.It can be 
+//    synthesized and simulated, but it should not be modified. 
+//
+`timescale 1ns / 1ps
+
+module scheme(clk, 
+              reset);
+
+    input clk;
+    input reset;
+   
+   wire [23:0] XLXN_1;
+   wire [7:0] XLXN_2;
+   wire XLXN_9;
+   wire [15:0] XLXN_10;
+   wire [1:0] XLXN_11;
+   wire [15:0] XLXN_12;
+   wire [15:0] XLXN_13;
+   wire [23:0] XLXN_14;
+   wire [7:0] XLXN_15;
+   wire XLXN_20;
+   wire [15:0] XLXN_21;
+   wire [1:0] XLXN_22;
+   wire [15:0] XLXN_23;
+   wire [15:0] XLXN_24;
+   wire XLXN_36;
+   wire XLXN_37;
+   wire XLXN_38;
+   wire XLXN_39;
+   wire XLXN_40;
+   wire XLXN_41;
+   wire XLXN_42;
+   wire XLXN_44;
+   wire XLXN_46;
+   wire XLXN_48;
+   wire XLXN_50;
+   wire [1:0] XLXN_51;
+   wire [15:0] XLXN_52;
+   wire [15:0] XLXN_53;
+   wire [15:0] XLXN_55;
+   wire [15:0] XLXN_57;
+   wire [1:0] XLXN_59;
+   wire [15:0] XLXN_60;
+   wire [15:0] XLXN_61;
+   wire [15:0] XLXN_63;
+   wire [15:0] XLXN_64;
+   wire XLXN_66;
+   wire [15:0] XLXN_67;
+   wire [15:0] XLXN_69;
+   
+   processor XLXI_5 (.cacheEn(XLXN_9), 
+                     .clk(clk), 
+                     .dataFromMem(XLXN_10[15:0]), 
+                     .instruction(XLXN_1[23:0]), 
+                     .reset(reset), 
+                     .addrToMem(XLXN_12[15:0]), 
+                     .cpuState(), 
+                     .data(), 
+                     .dataToMem(XLXN_13[15:0]), 
+                     .pcCounter(XLXN_2[7:0]), 
+                     .regId(), 
+                     .rwToMem(XLXN_11[1:0]), 
+                     .r0(), 
+                     .r1());
+   codeRam XLXI_6 (.pc(XLXN_2[7:0]), 
+                   .ins(XLXN_1[23:0]));
+   cache XLXI_7 (.addrFromCache(XLXN_64[15:0]), 
+                 .addrFromCPU(XLXN_12[15:0]), 
+                 .allowReadFromCache(XLXN_38), 
+                 .allowReadFromCacheAddr(XLXN_63[15:0]), 
+                 .clk(clk), 
+                 .dataFromCPU(XLXN_13[15:0]), 
+                 .dataFromMem(XLXN_67[15:0]), 
+                 .havMsgFromCache(XLXN_37), 
+                 .invFromCache(XLXN_41), 
+                 .memEn(XLXN_36), 
+                 .reset(reset), 
+                 .rmFromCache(XLXN_39), 
+                 .rwFromCPU(XLXN_11[1:0]), 
+                 .wmFromCache(XLXN_40), 
+                 .addrToCache(XLXN_57[15:0]), 
+                 .addrToMem(XLXN_52[15:0]), 
+                 .allowReadToCache(XLXN_44), 
+                 .allowReadToCacheAddr(XLXN_55[15:0]), 
+                 .cacheEnToCPU(XLXN_9), 
+                 .dataToCPU(XLXN_10[15:0]), 
+                 .dataToMem(XLXN_53[15:0]), 
+                 .debugCacheLine(), 
+                 .debugState(), 
+                 .havMsgToCache(XLXN_42), 
+                 .invToCache(XLXN_50), 
+                 .rmToCache(XLXN_46), 
+                 .rwToMem(XLXN_51[1:0]), 
+                 .wmToCache(XLXN_48));
+   codeRam XLXI_8 (.pc(XLXN_15[7:0]), 
+                   .ins(XLXN_14[23:0]));
+   processor XLXI_9 (.cacheEn(XLXN_20), 
+                     .clk(clk), 
+                     .dataFromMem(XLXN_21[15:0]), 
+                     .instruction(XLXN_14[23:0]), 
+                     .reset(reset), 
+                     .addrToMem(XLXN_23[15:0]), 
+                     .cpuState(), 
+                     .data(), 
+                     .dataToMem(XLXN_24[15:0]), 
+                     .pcCounter(XLXN_15[7:0]), 
+                     .regId(), 
+                     .rwToMem(XLXN_22[1:0]), 
+                     .r0(), 
+                     .r1());
+   cache XLXI_10 (.addrFromCache(XLXN_57[15:0]), 
+                  .addrFromCPU(XLXN_23[15:0]), 
+                  .allowReadFromCache(XLXN_44), 
+                  .allowReadFromCacheAddr(XLXN_55[15:0]), 
+                  .clk(clk), 
+                  .dataFromCPU(XLXN_24[15:0]), 
+                  .dataFromMem(XLXN_69[15:0]), 
+                  .havMsgFromCache(XLXN_42), 
+                  .invFromCache(XLXN_50), 
+                  .memEn(XLXN_66), 
+                  .reset(reset), 
+                  .rmFromCache(XLXN_46), 
+                  .rwFromCPU(XLXN_22[1:0]), 
+                  .wmFromCache(XLXN_48), 
+                  .addrToCache(XLXN_64[15:0]), 
+                  .addrToMem(XLXN_60[15:0]), 
+                  .allowReadToCache(XLXN_38), 
+                  .allowReadToCacheAddr(XLXN_63[15:0]), 
+                  .cacheEnToCPU(XLXN_20), 
+                  .dataToCPU(XLXN_21[15:0]), 
+                  .dataToMem(XLXN_61[15:0]), 
+                  .debugCacheLine(), 
+                  .debugState(), 
+                  .havMsgToCache(XLXN_37), 
+                  .invToCache(XLXN_41), 
+                  .rmToCache(XLXN_39), 
+                  .rwToMem(XLXN_59[1:0]), 
+                  .wmToCache(XLXN_40));
+   memBus XLXI_14 (.addrFromCacheA(XLXN_52[15:0]), 
+                   .addrFromCacheB(XLXN_60[15:0]), 
+                   .clk(clk), 
+                   .dataFromCacheA(XLXN_53[15:0]), 
+                   .dataFromCacheB(XLXN_61[15:0]), 
+                   .reset(reset), 
+                   .rwFromCacheA(XLXN_51[1:0]), 
+                   .rwFromCacheB(XLXN_59[1:0]), 
+                   .dataToCacheA(XLXN_67[15:0]), 
+                   .dataToCacheB(XLXN_69[15:0]), 
+                   .debugDelay(), 
+                   .debugRwToMem(), 
+                   .errReg(), 
+                   .memEnA(XLXN_36), 
+                   .memEnB(XLXN_66));
+endmodule

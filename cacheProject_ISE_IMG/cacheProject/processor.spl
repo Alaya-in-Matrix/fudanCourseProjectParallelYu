@@ -1,0 +1,20 @@
+[Inputs]
+clk
+reset
+cacheEn
+=instruction[23:0]=
+=dataFromMem[15:0]=
+[Outputs]
+=data[15:0]=
+=pcCounter[7:0]=
+=rwToMem[1:0]=
+=addrToMem[15:0]=
+=dataToMem[15:0]=
+=cpuState[1:0]=
+=regId[3:0]=
+=r0[15:0]=
+=r1[15:0]=
+[BiDir]
+[ATTRIBUTES]
+VeriModel processor
+

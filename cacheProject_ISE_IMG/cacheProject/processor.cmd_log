@@ -1,0 +1,1 @@
+xst -ise "/export/home/wllv/cacheProject/cacheProject.ise" -intstyle ise -ifn "/export/home/wllv/cacheProject/processor.xst" -ofn "/export/home/wllv/cacheProject/processor.syr"

@@ -1,0 +1,21 @@
+[Inputs]
+clk
+reset
+=rwFromCacheA[1:0]=
+=addrFromCacheA[15:0]=
+=dataFromCacheA[15:0]=
+=rwFromCacheB[1:0]=
+=addrFromCacheB[15:0]=
+=dataFromCacheB[15:0]=
+[Outputs]
+memEnA
+memEnB
+=dataToCacheA[15:0]=
+=dataToCacheB[15:0]=
+=errReg[3:0]=
+=debugRwToMem[1:0]=
+=debugDelay[7:0]=
+[BiDir]
+[ATTRIBUTES]
+VeriModel memBus
+
