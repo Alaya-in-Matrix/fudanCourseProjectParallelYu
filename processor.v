@@ -19,7 +19,7 @@ module processor(
     output reg[`IOSTATEWIDTH-1:0] rwToMem,
     output reg[`ADDRWIDTH-1:0] addrToMem,
     output reg[`WORDWIDTH-1:0] dataToMem,
-    input wire rdEn,wtEn,
+    input wire cacheEn,
     input wire[`WORDWIDTH-1:0] dataFromMem,
 
     //for debug purpose
@@ -102,7 +102,7 @@ always @(posedge clk) begin
                 state   = `ERR;
             end
             `LD  : begin 
-                if(! rdEn) 
+                if(! cacheEn) 
                     state = `MEM;
                 else begin 
                     regFile[regIdx] = dataFromMem;
@@ -112,7 +112,7 @@ always @(posedge clk) begin
                 end 
             end 
             `ST  : begin 
-                if(! wtEn) 
+                if(! cacheEn) 
                     state = `MEM;
                 else begin 
                     rwToMem = `IDEL;

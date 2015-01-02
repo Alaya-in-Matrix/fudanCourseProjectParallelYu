@@ -124,6 +124,7 @@ always @(reset,
                     havMsgToCache  = 0;
                     writeDoneToCPU = 1;
                     nextState      = `MODIFIED;
+                    cacheLine      = dataFromCPU;
                 end 
                 else if(rm) begin 
                     //write back
@@ -279,8 +280,10 @@ always @(reset,
                     nextState = `INVALID;
                 end 
                 else if(rh) begin 
-                    dataToCPU   = cacheLine;
-                    nextState   = `SHARED;
+                    havMsgToCache = 1;
+                    invToCache    = 1;
+                    dataToCPU     = cacheLine;
+                    nextState     = `SHARED;
                 end 
                 else if(wh) begin 
                     cacheLine      = dataFromCPU;

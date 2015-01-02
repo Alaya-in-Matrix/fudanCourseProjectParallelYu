@@ -8,17 +8,14 @@ module memBus(
     input wire[`ADDRWIDTH-1:0]    addrFromCacheA,
     input wire[`WORDWIDTH-1:0]    dataFromCacheA,
     output reg[`ADDRWIDTH-1:0]    dataToCacheA,
-    output reg rdEnToCacheA,
-    output reg wbDoneToCacheA,
+    output reg memEnA,
 
     //interact with cache B
     input wire[`IOSTATEWIDTH-1:0] rwFromCacheB,
     input wire[`ADDRWIDTH-1:0]    addrFromCacheB,
     input wire[`WORDWIDTH-1:0]    dataFromCacheB,
     output reg[`ADDRWIDTH-1:0]    dataToCacheB,
-    output reg rdEnToCacheB,
-    output reg wbDoneToCacheB,
-
+    output reg memEnB,
     output reg[`ERRWIDTH-1:0] errReg,
 
     //debug output 
@@ -42,76 +39,81 @@ assign debugRwToMem = rwToMem;
 assign debugDelay   = delay;
 
 //似乎目前是个摩尔模型, 不如改成米利模型, 同cache统一起来.
+reg stall;
 always @(posedge clk) begin 
     if(reset)begin 
-        rdEnToCacheA   = 0;
-        wbDoneToCacheA = 0;
-        rdEnToCacheB   = 0;
-        wbDoneToCacheB = 0;
-        rwToMem        = `IDEL;
-        delay          = MEMDELAY;
-        mem[0] = 0;
-        mem[1] = 0;
-        mem[2] = 0;
-        mem[3] = 0;
-        prefer = CA; //默认cache的优先级较高
+        memEnA     = 0;
+        memEnB     = 0;
+        rwToMem    = `IDEL;
+        delay      = MEMDELAY;
+        mem[0]     = 0;
+        mem[1]     = 0;
+        mem[2]     = 0;
+        mem[3]     = 0;
+        prefer     = CA; //默认cache的优先级较高
+        stall = 0;
     end
     else begin 
         if(rwToMem == `IDEL) begin 
-            rdEnToCacheA   = 0;
-            wbDoneToCacheA = 0;
-            rdEnToCacheB   = 0;
-            wbDoneToCacheB = 0;
-            if(prefer == CA) begin
-                if(rwFromCacheA != `IDEL) begin 
-                    chipSelect     = CA;
-                    rwToMem        = rwFromCacheA;
-                    addrToMem      = addrFromCacheA;
-                    dataToMem      = dataFromCacheA;
-                end
-                else if(rwFromCacheB != `IDEL) begin 
-                    chipSelect     = CB;
-                    rwToMem        = rwFromCacheB;
-                    addrToMem      = addrFromCacheB;
-                    dataToMem      = dataFromCacheB;
-                end
-                else begin 
-                    rwToMem = `IDEL;
-                end
+            if(stall > 0) begin 
+                rwToMem = `IDEL;
+                stall   = 0;
             end
-            else begin //prefer is CB
-                if(rwFromCacheB != `IDEL) begin 
-                    chipSelect     = CB;
-                    rwToMem        = rwFromCacheB;
-                    addrToMem      = addrFromCacheB;
-                    dataToMem      = dataFromCacheB;
+            else begin 
+                memEnA = 0;
+                memEnB = 0;
+                if(prefer == CA) begin
+                    if(rwFromCacheA != `IDEL) begin 
+                        chipSelect     = CA;
+                        rwToMem        = rwFromCacheA;
+                        addrToMem      = addrFromCacheA;
+                        dataToMem      = dataFromCacheA;
+                    end
+                    else if(rwFromCacheB != `IDEL) begin 
+                        chipSelect     = CB;
+                        rwToMem        = rwFromCacheB;
+                        addrToMem      = addrFromCacheB;
+                        dataToMem      = dataFromCacheB;
+                    end
+                    else begin 
+                        rwToMem = `IDEL;
+                    end
                 end
-                else if(rwFromCacheA != `IDEL) begin 
-                    chipSelect     = CA;
-                    rwToMem        = rwFromCacheA;
-                    addrToMem      = addrFromCacheA;
-                    dataToMem      = dataFromCacheA;
-                end
-                else begin 
-                    rwToMem = `IDEL;
+                else begin //prefer is CB
+                    if(rwFromCacheB != `IDEL) begin 
+                        chipSelect     = CB;
+                        rwToMem        = rwFromCacheB;
+                        addrToMem      = addrFromCacheB;
+                        dataToMem      = dataFromCacheB;
+                    end
+                    else if(rwFromCacheA != `IDEL) begin 
+                        chipSelect     = CA;
+                        rwToMem        = rwFromCacheA;
+                        addrToMem      = addrFromCacheA;
+                        dataToMem      = dataFromCacheA;
+                    end
+                    else begin 
+                        rwToMem = `IDEL;
+                    end
                 end
             end
         end
         else if(rwToMem ==`RD) begin 
             if(delay == 0) begin 
                 rwToMem = `IDEL;
+                stall   = 1;
                 delay   = MEMDELAY;
                 if(chipSelect == CA) begin 
-                    dataToCacheA   = mem[addrToMem];
-                    rdEnToCacheA   = 1;
-                    wbDoneToCacheA = 1;
-                    prefer         = CB;
+                    dataToCacheA = mem[addrToMem];
+                    memEnA       = 1;
+                    memEnB       = 0;
+                    prefer       = CB;
                 end
                 else begin 
-                    dataToCacheB   = mem[addrToMem];
-                    rdEnToCacheB   = 1;
-                    wbDoneToCacheB = 1;
-                    prefer         = CA;
+                    dataToCacheB = mem[addrToMem];
+                    memEnB       = 1;
+                    memEnA       = 0;
+                    prefer       = CA;
                 end
             end
             else begin 
@@ -121,17 +123,18 @@ always @(posedge clk) begin
         else if(rwToMem == `WT) begin 
             if(delay == 0) begin 
                 rwToMem = `IDEL;
+                stall   = 1;
                 delay   = MEMDELAY;
                 mem[addrToMem] = dataToMem;
                 if(chipSelect == CA) begin
-                    rdEnToCacheA   = 1;
-                    wbDoneToCacheA = 1;
-                    prefer         = CB;
+                    memEnA = 1;
+                    memEnB = 0;
+                    prefer = CB;
                 end
                 else begin
-                    rdEnToCacheB   = 1;
-                    wbDoneToCacheB = 1;
-                    prefer         = CA;
+                    memEnB = 1;
+                    memEnA = 0;
+                    prefer = CA;
                 end
             end 
             else begin 
@@ -142,5 +145,4 @@ always @(posedge clk) begin
         end
     end
 end
-//同一个reg是不是不能够被多个always块赋值
 endmodule

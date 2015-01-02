@@ -8,3 +8,6 @@
 * 如果RAM没有延时, 不用时钟,认为是个组合电路的话, 那么状态图确实容易实现, 然而给RAM加了一百个CYCLE的延时后, 先write_back, 再read, 就不容易实现了, 必然无法在一个clock cycle中实现.
 * 同一时刻只能够有一个device占据总线(cache1,cache2,memory)
 * readEn和writeEn似乎可以用一个memoryEn来代替
+
+* 指令集需要介绍
+* 两条指令同步, 需要介绍(为何不同步,CUDA,SP)

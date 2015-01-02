@@ -1,20 +1,19 @@
+//TODO: remove debug signal
 `include "./def.v"
 module testCodeRam;
 reg reset,clk;
-wire[`PCWIDTH-1:0] pc_proc1_code1,pc_proc2_code2;
-wire[`INSWIDTH-1:0] ins_code1_proc1,ins_code2_proc2;
-wire[`WORDWIDTH-1:0] dataOut1,dataOut2;
+wire[`PCWIDTH-1:0]      pc_proc1_code1,pc_proc2_code2;
+wire[`INSWIDTH-1:0]     ins_code1_proc1,ins_code2_proc2;
+wire[`WORDWIDTH-1:0]    dataOut1,dataOut2;
 wire[`IOSTATEWIDTH-1:0] rw_P1_C1,rw_P2_C2;
 
-wire [`ADDRWIDTH-1:0]addr_P1_C1,addr_P2_C2;
-wire [`WORDWIDTH-1:0]data_P1_C1,data_P2_C2;
-wire rdEn_C1_P1,rdEn_C2_P2;
-wire wtEn_C1_P1,wtEn_C2_P2;
-wire [`WORDWIDTH-1:0]data_C1_P1,data_C2_P2;
+wire                  en_C1_P1,en_C2_P2;
+wire [`ADDRWIDTH-1:0] addr_P1_C1,addr_P2_C2;
+wire [`WORDWIDTH-1:0] data_P1_C1,data_P2_C2;
+wire [`WORDWIDTH-1:0] data_C1_P1,data_C2_P2;
 
 wire[`WORDWIDTH-1:0]data_M_C1,data_M_C2;
-wire rdEn_M_C1,rdEn_M_C2;
-wire wtEn_M_C1,wtEn_M_C2;
+wire en_M_C1,en_M_C2;
 wire[`IOSTATEWIDTH-1:0]rw_C1_M,rw_C2_M;
 wire[`ADDRWIDTH-1:0] addr_C1_M,addr_C2_M;
 wire[`WORDWIDTH-1:0] data_C1_M,data_C2_M;
@@ -48,8 +47,7 @@ processor P1(
     .rwToMem(rw_P1_C1),
     .addrToMem(addr_P1_C1),
     .dataToMem(data_P1_C1),
-    .rdEn(rdEn_C1_P1),
-    .wtEn(wtEn_C1_P1),
+    .cacheEn(en_C1_P1),
     .dataFromMem(data_C1_P1),
     .cpuState(stateP1),
     .r0(r0P1),
@@ -67,8 +65,7 @@ processor P2(
     .rwToMem(rw_P2_C2),
     .addrToMem(addr_P2_C2),
     .dataToMem(data_P2_C2),
-    .rdEn(rdEn_C2_P2),
-    .wtEn(wtEn_C2_P2),
+    .cacheEn(en_C2_P2),
     .dataFromMem(data_C2_P2),
     .cpuState(stateP2),
     .r0(r0P2),
@@ -84,13 +81,11 @@ cache C1(
     .rwFromCPU(rw_P1_C1),
     .addrFromCPU(addr_P1_C1),
     .dataFromCPU(data_P1_C1),
-    .readEnToCPU(rdEn_C1_P1),
-    .writeDoneToCPU(wtEn_C1_P1),
+    .cacheEnToCPU(en_C1_P1),
     .dataToCPU(data_C1_P1),
 
     .dataFromMem(data_M_C1),
-    .readEnFromMem(rdEn_M_C1),
-    .writeDoneFromMem(wtEn_M_C1),
+    .memEn(en_M_C1),
     .rwToMem(rw_C1_M),
     .addrToMem(addr_C1_M),
     .dataToMem(data_C1_M),
@@ -121,13 +116,11 @@ cache C2(
     .rwFromCPU(rw_P2_C2),
     .addrFromCPU(addr_P2_C2),
     .dataFromCPU(data_P2_C2),
-    .readEnToCPU(rdEn_C2_P2),
-    .writeDoneToCPU(wtEn_C2_P2),
+    .cacheEnToCPU(en_C2_P2),
     .dataToCPU(data_C2_P2),
 
     .dataFromMem(data_M_C2),
-    .readEnFromMem(rdEn_M_C2),
-    .writeDoneFromMem(wtEn_M_C2),
+    .memEn(en_M_C2),
     .rwToMem(rw_C2_M),
     .addrToMem(addr_C2_M),
     .dataToMem(data_C2_M),
@@ -161,15 +154,13 @@ memBus mb(
     .addrFromCacheA(addr_C1_M),
     .dataFromCacheA(data_C1_M),
     .dataToCacheA(data_M_C1),
-    .rdEnToCacheA(rdEn_M_C1),
-    .wbDoneToCacheA(wtEn_M_C1),
+    .memEnA(en_M_C1),
 
     .rwFromCacheB(rw_C2_M),
     .addrFromCacheB(addr_C2_M),
     .dataFromCacheB(data_C2_M),
     .dataToCacheB(data_M_C2),
-    .rdEnToCacheB(rdEn_M_C2),
-    .wbDoneToCacheB(wtEn_M_C2),
+    .memEnB(en_M_C2),
 
     //debug output 
     .debugRwToMem(debugRwToMem),
@@ -242,7 +233,7 @@ initial begin
     code2.codes[4] = {`ST,  `R0,    `ADDRWIDTH'd0};
     reset          = 1'b1;
     #20 reset      = 1'b0;
-    #2500;
+    #1500;
     $display("Special Read After Write");
     $display("time:%d,P1.r0:%d,C1.cachLine:%d,C1.state:%h",$time,P1.regFile[0],C1.cacheLine, C1.state);
     $display("time:%d,P2.r0:%d,C2.cachLine:%d,C2.state:%h",$time,P2.regFile[0],C2.cacheLine, C2.state);
