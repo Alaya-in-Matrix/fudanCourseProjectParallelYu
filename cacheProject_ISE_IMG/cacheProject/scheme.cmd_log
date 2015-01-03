@@ -1,4 +1,0 @@
-sch2verilog -intstyle ise -family aspartan2e   -w "/export/home/wllv/cacheProject/scheme.sch" scheme.vf
-xst -ise "/export/home/wllv/cacheProject/cacheProject.ise" -intstyle ise -ifn "/export/home/wllv/cacheProject/scheme.xst" -ofn "/export/home/wllv/cacheProject/scheme.syr"
-ngdbuild -ise "/export/home/wllv/cacheProject/cacheProject.ise" -intstyle ise -dd _ngo  -nt timestamp -i -p xa2s50e-tq144-6 "scheme.ngc" scheme.ngd
-map -ise "/export/home/wllv/cacheProject/cacheProject.ise" -intstyle ise -p xa2s50e-tq144-6 -cm area -pr off -k 4 -c 100 -tx off -o scheme_map.ncd scheme.ngd scheme.pcf
