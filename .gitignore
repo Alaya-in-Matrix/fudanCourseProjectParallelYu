@@ -3,6 +3,7 @@
 *.swp
 *.exe
 *.o
+*.zip
 verilog_learn/
 diff
 ignore/

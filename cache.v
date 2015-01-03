@@ -1,6 +1,6 @@
-//只有allowRead才能进入需要read的状态.
-//也许write enable没什么用?
-//非error/m/s/i的状态, 只能有一个出口.
+//ֻ��allowRead���ܽ�����Ҫread��״̬.
+//Ҳ��write enableûʲô��?
+//��error/m/s/i��״̬, ֻ����һ������.
 `include "./def.v"
 module cache(
     input clk,
@@ -10,21 +10,19 @@ module cache(
     input[`ADDRWIDTH-1:0]    addrFromCPU,
     input[`WORDWIDTH-1:0]    dataFromCPU,
     input[`WORDWIDTH-1:0]    dataFromMem,
-    input readEnFromMem,                    //readEnable, finished reading
-    input writeDoneFromMem,                 //writeEnable,
-    input havMsgFromCache,
-    input allowReadFromCache,
-    input [`ADDRWIDTH-1:0] allowReadFromCacheAddr,
-    input[`ADDRWIDTH-1:0]    addrFromCache,
-    input rmFromCache,
-    input wmFromCache,
-    input invFromCache,
-    output reg readEnToCPU,
-    output reg writeDoneToCPU,
-    output reg[`WORDWIDTH-1:0] dataToCPU,
+    input                 memEn,
+    input                 havMsgFromCache,
+    input                 allowReadFromCache,
+    input                 rmFromCache,
+    input                 wmFromCache,
+    input                 invFromCache,
+    input[`ADDRWIDTH-1:0] allowReadFromCacheAddr,
+    input[`ADDRWIDTH-1:0] addrFromCache,
+    output reg                    cacheEnToCPU,
+    output reg[`WORDWIDTH-1:0]    dataToCPU,
     output reg[`IOSTATEWIDTH-1:0] rwToMem,
-    output reg[`ADDRWIDTH-1:0] addrToMem,
-    output reg[`WORDWIDTH-1:0] dataToMem,
+    output reg[`ADDRWIDTH-1:0]    addrToMem,
+    output reg[`WORDWIDTH-1:0]    dataToMem,
     output reg havMsgToCache,
     output reg allowReadToCache,
     output reg[`ADDRWIDTH-1:0] allowReadToCacheAddr,
@@ -38,160 +36,207 @@ module cache(
     output [`WORDWIDTH-1:0] debugCacheLine
 );
 
-reg [`STATEWIDTH-1:0] state,nextState;
+reg [`STATEWIDTH-1:0] state;
 reg [`ADDRWIDTH-1:0]  addr;
 reg [`WORDWIDTH-1:0]  cacheLine;
 reg [`ERRWIDTH-1:0]   errReg; //register to store err id
 
 
-wire idel = (rwFromCPU == `IDEL);
-wire rm   = (rwFromCPU == `RD  ) && (state == `INVALID || addrFromCPU != addr);
-wire rh   = (rwFromCPU == `RD  ) && (state != `INVALID && addrFromCPU == addr);
-wire wm   = (rwFromCPU == `WT  ) && (state == `INVALID || addrFromCPU != addr);
-wire wh   = (rwFromCPU == `WT  ) && (state != `INVALID && addrFromCPU == addr);
-wire snoopRm  = (addrFromCache == addr) && rmFromCache;
-wire snoopWM  = (addrFromCache == addr) && wmFromCache;
-wire snoopInv = (addrFromCache == addr) && invFromCache;
+wire isInvalid = (state == `INVALID) || (state == `I_RM_RD) || (state == `I_WM_RD);
+wire idel      = (rwFromCPU == `IDEL);
+wire rm        = (rwFromCPU == `RD  ) && (isInvalid  || addrFromCPU != addr);
+wire rh        = (rwFromCPU == `RD  ) && (!isInvalid && addrFromCPU == addr);
+wire wm        = (rwFromCPU == `WT  ) && (isInvalid  || addrFromCPU != addr);
+wire wh        = (rwFromCPU == `WT  ) && (!isInvalid && addrFromCPU == addr);
+wire snoopRm   = havMsgFromCache && (addrFromCache == addr) && rmFromCache;
+wire snoopWm   = havMsgFromCache && (addrFromCache == addr) && wmFromCache;
+wire snoopInv  = havMsgFromCache && (addrFromCache == addr) && invFromCache;
 
 //debug msg
+//TODO: remove debug state
 assign debugState     = state;
 assign debugCacheLine = cacheLine;
 
 reg stall;
-//组合逻辑
-always @(reset,
-         rwFromCPU,addrFromCache,dataFromCPU,
-         dataFromMem,readEnFromMem,writeDoneFromMem,
-         havMsgFromCache,addrFromCache,rmFromCache,wmFromCache, invFromCache,
-         state,posedge clk
-     ) begin 
-    //这样的初始化方式是不是有问题?
-    //有些需要保持的量因为无关的输入变化而无法保持?
-    // readEnToCPU      = 0;
-    // writeDoneToCPU   = 0;
-    /* rwToMem          = `IDEL; */
-    rmToCache            = 0;
-    wmToCache            = 0;
-    invToCache           = 0;
-    nextState            = state;
+always @(posedge clk) begin
     if(reset) begin 
-        readEnToCPU          = 1;
-        writeDoneToCPU       = 1;
-        rwToMem              = `IDEL;
-        havMsgToCache        = 0;
-        allowReadToCache     = 1; //也许这句不能有?
-        rmToCache            = 0;
-        wmToCache            = 0;
-        invToCache           = 0;
-        nextState            = `INVALID;
-        cacheLine            = 0;
-        stall = 0;
+        cacheEnToCPU     = 0;
+        rwToMem          = `IDEL;
+        havMsgToCache    = 0;
+        allowReadToCache = 1; //Ҳ����䲻����?
+        rmToCache        = 0;
+        wmToCache        = 0;
+        invToCache       = 0;
+        state            = `INVALID;
+        cacheLine        = 0;
+        stall            = 0;
+        addr             = 0;
     end
     else begin 
         case(state) 
             `MODIFIED: begin 
                 if(snoopRm) begin 
-                    //write back, final state change to SHARED
-                    //应该不需要writeEnable信号吧, 反正本来就是要stall的.
-                    havMsgToCache        = 0;
+                    //write back this block 
+                    //final state change to shared
+                    cacheEnToCPU         = 0;
+                    dataToCPU            = 0;
                     rwToMem              = `WT;
                     addrToMem            = addr;
-                    readEnToCPU          = 0;
-                    writeDoneToCPU       = 0;
                     dataToMem            = cacheLine;
+                    havMsgToCache        = 0;
                     allowReadToCache     = 0;
                     allowReadToCacheAddr = addr;
-                    nextState            = `M_SRM_WB;
+                    rmToCache            = 0;
+                    wmToCache            = 0;
+                    invToCache           = 0;
+                    stall                = 0;
+                    state                = `M_SRM_WB;
                 end 
-                else if(snoopWM) begin
+                else if(snoopWm) begin
                     //write back, final state change to INVALID
-                    havMsgToCache        = 0;
+                    cacheEnToCPU         = 0;
+                    dataToCPU            = 0;
                     rwToMem              = `WT;
                     addrToMem            = addr;
+                    dataToMem            = cacheLine;
+                    havMsgToCache        = 0;
                     allowReadToCache     = 0;
                     allowReadToCacheAddr = addr;
-                    readEnToCPU          = 0;
-                    writeDoneToCPU       = 0;
-                    dataToMem            = cacheLine;
-                    nextState            = `M_SWM_WB;
+                    stall                = 0;
+                    state                = `M_SWM_WB;
                 end
                 else if(rh) begin 
-                    havMsgToCache = 0;
-                    dataToCPU     = cacheLine;
-                    nextState     = `MODIFIED;
+                    cacheEnToCPU         = 1;
+                    dataToCPU            = cacheLine;
+                    rwToMem              = `IDEL;
+                    addrToMem            = 0;
+                    dataToMem            = 0;
+                    havMsgToCache        = 0;
+                    allowReadToCache     = 1;
+                    allowReadToCacheAddr = 0;
+                    addrToMem            = 0;
+                    rmToCache            = 0;
+                    wmToCache            = 0;
+                    invToCache           = 0;
+                    stall                = 0;
+                    addr                 = addr;
+                    cacheLine            = cacheLine;
+                    state                = state;
                 end 
                 else if(wh) begin 
-                    havMsgToCache  = 0;
-                    writeDoneToCPU = 1;
-                    nextState      = `MODIFIED;
-                    cacheLine      = dataFromCPU;
+                    cacheEnToCPU         = 1;
+                    dataToCPU            = 0;
+                    rwToMem              = `IDEL;
+                    addrToMem            = 0;
+                    dataToMem            = 0;
+                    havMsgToCache        = 0;
+                    allowReadToCache     = 0;
+                    allowReadToCacheAddr = 0;
+                    addrToCache          = 0;
+                    rmToCache            = 0;
+                    wmToCache            = 0;
+                    invToCache           = 0;
+                    stall                = 0;
+                    state                = state;
+                    addr                 = addr;
+                    cacheLine            = dataFromCPU;
                 end 
                 else if(rm) begin 
                     //write back
                     //broadcast read miss
                     //final state change to shared
+                    cacheEnToCPU         = 0;
+                    dataToCPU            = 0;
                     rwToMem              = `WT;
-                    readEnToCPU          = 0;
-                    writeDoneToCPU       = 0;
                     addrToMem            = addr;
-                    allowReadToCache     = 0;
-                    allowReadToCacheAddr = addr;
-
                     dataToMem            = cacheLine;
                     havMsgToCache        = 1;
-                    rmToCache            = 1;
+                    allowReadToCache     = 0;
+                    allowReadToCacheAddr = addr;
                     addrToCache          = addrFromCPU;
-                    nextState            = `M_RM_WB;
+                    rmToCache            = 1;
+                    wmToCache            = 0;
+                    invToCache           = 0;
+                    stall                = 0;
+                    state                = `M_RM_WB;
+                    addr                 = addr;
+                    cacheLine            = dataFromCPU;
                 end 
                 else if(wm) begin 
                     //write back
                     //broadcast write miss
                     //final state remains modified
+                    cacheEnToCPU         = 0;
+                    dataToCPU            = 0;
                     rwToMem              = `WT;
-                    allowReadToCache     = 0;
-                    allowReadToCacheAddr = addr;
-                    readEnToCPU          = 0;
-                    writeDoneToCPU       = 0;
                     addrToMem            = addr;
                     dataToMem            = cacheLine;
                     havMsgToCache        = 1;
-                    wmToCache            = 1;
+                    allowReadToCache     = 0;
+                    allowReadToCacheAddr = addr;
                     addrToCache          = addrFromCPU;
-                    nextState            = `M_WM_WB;
+                    rmToCache            = 0;
+                    wmToCache            = 1;
+                    invToCache           = 0;
+                    stall                = 0;
+                    addr                 = addr;
+                    cacheLine            = dataFromCPU;
+                    state                = `M_WM_WB;
                 end 
                 else if(idel) begin 
                     //no bus msg and no cpu access
-                    nextState = `MODIFIED;
+                    cacheEnToCPU         = cacheEnToCPU;
+                    dataToCPU            = dataToCPU;
+                    rwToMem              = rwToMem;
+                    addrToMem            = addrToMem;
+                    dataToMem            = dataToMem;
+                    havMsgToCache        = havMsgToCache;
+                    allowReadToCache     = allowReadToCache;
+                    allowReadToCacheAddr = allowReadToCacheAddr;
+                    addrToCache          = addrFromCPU;
+                    rmToCache            = rmToCache;
+                    wmToCache            = wmToCache;
+                    invToCache           = invToCache;
+                    stall                = stall;
+                    addr                 = addr;
+                    cacheLine            = cacheLine;
+                    state                = state;
                 end 
                 else begin 
                     //error occurs
                     errReg    = `ERR_UNKNOWN;
-                    nextState = `ERROR;
+                    state = `ERROR;
                 end
             end
             `M_SRM_WB: begin 
-                if(writeDoneFromMem) begin 
-                    rwToMem          = `IDEL;
+                if(memEn) begin 
+                    rwToMem = `IDEL;
                     if(rwFromCPU == `IDEL) begin 
-                        readEnToCPU      = 1;
-                        writeDoneToCPU   = 1;
+                        cacheEnToCPU = 1;
+                    end
+                    else begin 
+                        cacheEnToCPU = 0;
                     end
                     allowReadToCache = 1;
-                    nextState        = `SHARED;
+                    state            = `SHARED;
                 end
                 else begin 
-                    nextState = `M_SRM_WB;
+                    cacheEnToCPU     = 0;
+                    allowReadToCache = 0;
+                    state            = `M_SRM_WB;
                 end
             end
             `M_SWM_WB: begin 
-                if(writeDoneFromMem) begin 
-                    rwToMem          = `IDEL;
+                if(memEn) begin 
+                    rwToMem = `IDEL;
                     if(rwFromCPU == `IDEL) begin
-                        readEnToCPU      = 1;
-                        writeDoneToCPU   = 1;
+                        cacheEnToCPU = 1;
                     end 
+                    else begin 
+                        cacheEnToCPU = 0;
+                    end
+                    state            = `INVALID;
                     allowReadToCache = 1;
-                    nextState        = `INVALID;
                     if(rwFromCPU != `IDEL) begin 
                         stall = 1;
                     end 
@@ -200,282 +245,278 @@ always @(reset,
                     end
                 end
                 else begin 
-                    nextState = `M_SWM_WB;
+                    state = `M_SWM_WB;
                 end
             end
             `M_WM_WB: begin 
-                if(writeDoneFromMem) begin 
+                if(memEn) begin 
                     //mem,data,cpu,bus
                     if(allowReadFromCache || allowReadFromCacheAddr != addrFromCPU) begin
                         rwToMem              = `RD;
                         addrToMem            = addrFromCPU;
-                        nextState            = `M_WM_RD;
                         allowReadToCache     = 0;
                         allowReadToCacheAddr = addrFromCPU;
+                        state                = `M_WM_RD;
                     end
                     else 
-                        nextState = `M_WM_WB;
+                        state = `M_WM_WB;
                 end
                 else begin 
-                    nextState = `M_WM_WB;
+                    state = `M_WM_WB;
                 end
             end
             `M_RM_WB:begin 
-                if(writeDoneFromMem) begin 
+                if(memEn) begin 
                     if(allowReadFromCache || allowReadToCacheAddr != addrFromCPU) begin
                         rwToMem   = `RD;
                         addrToMem = addrFromCPU;
-                        nextState = `M_RM_RD;
+                        state     = `M_RM_RD;
                     end
                     else
-                        nextState = `M_RM_WB;
+                        state = `M_RM_WB;
                 end 
-                else  nextState = `M_RM_WB; 
+                else  state = `M_RM_WB; 
             end
             `M_WM_RD: begin 
-                if(readEnFromMem) begin //read enable
+                if(memEn) begin //read enable
                     if(addrFromCPU == addrToMem) begin 
-                        cacheLine      = dataFromMem;
-                        addr           = addrToMem;
-                        cacheLine      = dataFromCPU;
-                        rwToMem        = `IDEL;
-                        readEnToCPU    = 1;
-                        writeDoneToCPU = 1;
-                        nextState      = `MODIFIED;
+                        cacheLine     = dataFromMem;
+                        addr          = addrToMem;
+                        cacheLine     = dataFromCPU;
+                        rwToMem       = `IDEL;
+                        cacheEnToCPU  = 1;
+                        havMsgToCache = 0;
+                        wmToCache     = 0;
+                        state         = `MODIFIED;
                     end 
                     else begin 
-                        nextState = `ERROR;
+                        state = `ERROR;
                         errReg    = `ERR_ADDR_MISMATCH;
                     end
                 end
-                else nextState = `M_WM_RD;
+                else state = `M_WM_RD;
             end
             `M_RM_RD: begin 
-                if(readEnFromMem) begin //read enable
+                if(memEn) begin //read enable
                     if(addrFromCPU == addrToMem) begin
                         cacheLine        = dataFromMem;
                         addr             = addrToMem;
                         dataToCPU        = cacheLine;
                         rwToMem          = `IDEL;
-                        readEnToCPU      = 1;
-                        writeDoneToCPU   = 1;
+                        cacheEnToCPU     = 1;
                         allowReadToCache = 1;
-                        nextState        = `SHARED;
+                        havMsgToCache    = 0;
+                        rmToCache        = 0;
+                        state            = `SHARED;
                     end 
                     else begin 
-                        nextState = `ERROR;
+                        state = `ERROR;
                         errReg    = `ERR_ADDR_MISMATCH;
                     end 
                 end
-                else nextState = `M_RM_RD;
+                else state = `M_RM_RD;
             end 
             `SHARED:begin 
                 if(snoopRm) begin 
-                    nextState = `SHARED;
+                    state = `SHARED;
                 end 
-                else if(snoopWM) begin
-                    nextState = `INVALID;
+                else if(snoopWm) begin
+                    state = `INVALID;
                 end
                 else if(snoopInv) begin 
-                    nextState = `INVALID;
+                    state = `INVALID;
                 end 
                 else if(rh) begin 
-                    havMsgToCache = 1;
-                    invToCache    = 1;
-                    dataToCPU     = cacheLine;
-                    nextState     = `SHARED;
+                    dataToCPU   = cacheLine;
+                    state   = `SHARED;
                 end 
                 else if(wh) begin 
-                    cacheLine      = dataFromCPU;
-                    writeDoneToCPU = 1;
-                    nextState      = `MODIFIED;
+                    cacheLine    = dataFromCPU;
+                    cacheEnToCPU = 1;
+                    state        = `MODIFIED;
                 end 
                 else if(rm) begin 
                     //mem,bus,state
-                    havMsgToCache  = 1;
-                    rmToCache      = 1; //broad cast read miss
-                    addrToCache    = addrFromCPU;
-                    readEnToCPU    = 0;
-                    writeDoneToCPU = 0;
+                    havMsgToCache = 1;
+                    rmToCache     = 1; //broad cast read miss
+                    addrToCache   = addrFromCPU;
+                    cacheEnToCPU  = 0;
                     if(allowReadFromCache || allowReadFromCacheAddr != addrFromCPU) begin 
-                        rwToMem        = `RD;
-                        addrToMem      = addrFromCPU;
-                        nextState      = `S_RM_RD;
+                        rwToMem   = `RD;
+                        addrToMem = addrFromCPU;
+                        state     = `S_RM_RD;
                     end
                     else begin 
-                        nextState = `SHARED; 
+                        state = `SHARED; 
                     end
                 end 
                 else if(wm) begin 
-                    havMsgToCache  = 1;
-                    wmToCache      = 1;
-                    addrToCache    = addrFromCPU;
-                    readEnToCPU    = 0;
-                    writeDoneToCPU = 0;
+                    havMsgToCache = 1;
+                    wmToCache     = 1;
+                    addrToCache   = addrFromCPU;
+                    cacheEnToCPU  = 0;
+                    
                     if(allowReadFromCache || allowReadToCacheAddr != addrFromCPU) begin 
                         rwToMem              = `RD;
                         addrToMem            = addrFromCPU;
-                        nextState            = `S_WM_RD;
+                        state                = `S_WM_RD;
                         allowReadToCache     = 0;
                         allowReadToCacheAddr = addrFromCPU;
                     end 
                     else begin 
-                        nextState = `SHARED; 
+                        state = `SHARED; 
                     end
                 end 
                 else if(idel) begin 
                     havMsgToCache = 0;
-                    nextState     = `SHARED;
+                    wmToCache     = 0;
+                    rmToCache     = 0;
+                    invToCache    = 0;
+                    state     = `SHARED;
                 end 
                 else begin 
                     havMsgToCache = 0;
                     errReg        = `ERR_UNKNOWN;
-                    nextState     = `ERROR;
+                    state     = `ERROR;
                 end
             end
             `S_RM_RD: begin 
                 havMsgToCache = 1;
                 rmToCache     = 1;
-                if(readEnFromMem) begin //read enable
+                if(memEn) begin //read enable
                     if(addrToMem == addrFromCPU) begin 
-                        cacheLine      = dataFromMem;
-                        addr           = addrToMem;
-                        cacheLine      = dataFromCPU;
-                        dataToCPU      = cacheLine;
-                        rwToMem        = `IDEL;
-                        readEnToCPU    = 1;
-                        writeDoneToCPU = 1;
-                        nextState      = `SHARED;
+                        cacheLine     = dataFromMem;
+                        addr          = addrToMem;
+                        cacheLine     = dataFromCPU;
+                        dataToCPU     = cacheLine;
+                        rwToMem       = `IDEL;
+                        cacheEnToCPU  = 1;
+                        havMsgToCache = 0;
+                        rmToCache     = 0;
+                        state         = `SHARED;
                     end 
                     else begin 
-                        nextState = `ERROR;
+                        state = `ERROR;
                         errReg    = `ERR_ADDR_MISMATCH;
                     end 
                 end
-                else nextState = `S_RM_RD;
+                else state = `S_RM_RD;
             end
             `S_WM_RD: begin 
                 havMsgToCache = 1;
                 wmToCache     = 1;
-                if(readEnFromMem) begin //read enable
+                if(memEn) begin //read enable
                     if(addrFromCPU == addrToMem) begin 
-                        cacheLine      = dataFromMem;
-                        addr           = addrToMem;
-                        cacheLine      = dataFromCPU;
-                        rwToMem        = `IDEL;
-                        readEnToCPU    = 1;
-                        writeDoneToCPU = 1;
-                        nextState      = `MODIFIED;
+                        cacheLine     = dataFromMem;
+                        addr          = addrToMem;
+                        cacheLine     = dataFromCPU;
+                        rwToMem       = `IDEL;
+                        cacheEnToCPU  = 1;
+                        havMsgToCache = 0;
+                        rmToCache     = 0;
+                        state         = `MODIFIED;
                     end 
                     else begin 
-                        nextState = `ERROR;
+                        state = `ERROR;
                         errReg    = `ERR_ADDR_MISMATCH;
                     end
                 end
-                else nextState = `S_WM_RD;
+                else state = `S_WM_RD;
             end
             `INVALID: begin 
                 if(rm) begin 
                     //broadcast readmiss
-                    havMsgToCache  = 1;
-                    rmToCache      = 1;
-                    addrToCache    = addrFromCPU;
-                    readEnToCPU    = 0;
-                    writeDoneToCPU = 0;
+                    havMsgToCache = 1;
+                    rmToCache     = 1;
+                    addrToCache   = addrFromCPU;
+                    cacheEnToCPU  = 0;
                     if(allowReadFromCache || allowReadToCacheAddr != addrFromCPU) begin 
                         if(stall == 0) begin 
                             rwToMem   = `RD;
                             addrToMem = addrFromCPU;
-                            nextState = `I_RM_RD;
+                            state = `I_RM_RD;
                         end
                         else begin 
                             stall = 0;
-                            nextState = `INVALID;
+                            state = `INVALID;
                         end
                     end 
                     else begin 
-                        nextState = `INVALID;
+                        state = `INVALID;
                     end
                 end 
                 else if(wm) begin 
-                    havMsgToCache  = 1;
-                    addrToCache    = addrFromCPU;
-                    wmToCache      = 1;
-                    readEnToCPU    = 0;
-                    writeDoneToCPU = 0;
+                    havMsgToCache = 1;
+                    addrToCache   = addrFromCPU;
+                    wmToCache     = 1;
+                    cacheEnToCPU  = 0;
                     if(allowReadFromCache || allowReadFromCacheAddr != addrFromCPU) begin 
                         if(stall == 0) begin
                             rwToMem              = `RD;
                             addrToMem            = addrFromCPU;
-                            nextState            = `I_WM_RD;
+                            state            = `I_WM_RD;
                             allowReadToCache     = 0;
                             allowReadToCacheAddr = addrFromCPU;
                         end 
                         else begin 
                             stall     = 0;
-                            nextState = `INVALID;
+                            state = `INVALID;
                         end
                     end 
                     else begin 
-                        nextState = `INVALID;
+                        state = `INVALID;
                     end 
                 end 
                 else if(idel) begin 
                     havMsgToCache = 0;
-                    nextState     = `INVALID;
+                    state     = `INVALID;
                 end 
                 else begin 
-                    nextState = `ERROR;
+                    state = `ERROR;
                     errReg    = `ERR_UNKNOWN;
                 end 
             end
             `I_RM_RD: begin  //equal to I_RM_RD
                 havMsgToCache = 1;
-                rmToCache     = 1;
-                if(readEnFromMem) begin //read enable
+                if(memEn) begin //read enable
                     if(addrToMem == addrFromCPU) begin 
-                        cacheLine      = dataFromMem;
-                        addr           = addrToMem;
-                        dataToCPU      = cacheLine;
-                        rwToMem        = `IDEL;
-                        readEnToCPU    = 1;
-                        writeDoneToCPU = 1;
-                        nextState      = `SHARED;
+                        cacheLine    = dataFromMem;
+                        addr         = addrToMem;
+                        dataToCPU    = cacheLine;
+                        rwToMem      = `IDEL;
+                        cacheEnToCPU = 1;
+                        rmToCache    = 0;
+                        state        = `SHARED;
                     end 
                     else begin 
-                        nextState = `ERROR;
+                        state = `ERROR;
                         errReg    = `ERR_ADDR_MISMATCH;
                     end 
                 end
-                else nextState = `I_RM_RD;
+                else state = `I_RM_RD;
             end 
             `I_WM_RD: begin 
-                havMsgToCache = 1;
-                wmToCache     = 1;
-                if(readEnFromMem) begin //read enable
+                if(memEn) begin //read enable
                     if(addrFromCPU == addrToMem) begin 
-                        cacheLine      = dataFromMem;
-                        addr           = addrToMem;
-                        cacheLine      = dataFromCPU;
-                        rwToMem        = `IDEL;
-                        readEnToCPU    = 1;
-                        writeDoneToCPU = 1;
-                        nextState      = `MODIFIED;
+                        cacheLine     = dataFromMem;
+                        addr          = addrToMem;
+                        cacheLine     = dataFromCPU;
+                        rwToMem       = `IDEL;
+                        cacheEnToCPU  = 1;
+                        havMsgToCache = 0;
+                        wmToCache     = 0;
+                        state         = `MODIFIED;
                     end 
                     else begin 
-                        nextState = `ERROR;
+                        state = `ERROR;
                         errReg    = `ERR_ADDR_MISMATCH;
                     end
                 end
-                else nextState = `I_WM_RD;
+                else state = `I_WM_RD;
             end
             default: 
-                nextState = `ERROR;
+                state = `ERROR;
         endcase
     end
-end
-//时序逻辑
-always @(posedge clk) begin 
-    state <= nextState;
 end
 endmodule
