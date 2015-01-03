@@ -24,7 +24,6 @@
 
 完整的电路结构如下图所示:
 ![all](./image/all.png)
-## MSI模型 ##
 
 ## 电路模块设计细节 ##
 ### code memory ###
@@ -174,26 +173,28 @@ output reg invToCache,                      //广播invalidate信号
 #### 状态关系转换 ####
 为一条cacheline定义了以下几种状态
 ```verilog
-`define ERROR      4'h0 //表示cacheline遇到了硬件错误.
-`define MODIFIED   4'h1 //表示cacheline为MODIFIED.
-`define M_SRM_WB   4'h2 //表示cacheline为MODIFIED, 并且监听到了总线上的readmiss 信号, 正在执行写回操作.
-`define M_SWM_WB   4'h3 //表示cacheline为MODIFIED, 并且监听到了总线上的writemiss信号, 正在执行写回操作.
-`define M_WM_WB    4'h4 //表示cacheline为MODIFIED, 并且遇到了CPU writemiss, 正在执行写回操作.
-`define M_RM_WB    4'h5 //表示cacheline为MODIFIED, 并且遇到了CPU readmiss,  正在执行写回操作.
-`define M_WM_RD    4'h6 //表示cacheline为MODIFIED, 并且遇到了CPU writemiss, 已经执行完写回操作, 正在执行读取操作.
-`define M_RM_RD    4'h7 //表示cacheline为MODIFIED, 并且遇到了CPU readmiss,  已经执行完写回操作, 正在执行读取操作.
-`define SHARED     4'h8 //表示cacheline为SHARED.
-`define S_RM_RD    4'h9 //表示cacheline为SHARED, 并且遇到了CPU readmiss, 正在执行读内存操作.
-`define S_WM_RD    4'ha //表示cacheline为SHARED, 并且遇到了CPU writemiss, 正在执行读内存操作.
-`define INVALID    4'hb //表示cacheline为INVALID.
-`define I_RM_RD    4'hc //表示cacheline为INVALID, 并且遇到了read miss,正在执行读内存操作.
-`define I_WM_RD    4'hd //表示cacheline为INVALID, 并且遇到了writemiss, 正在执行读内存操作.
+
+    `define ERROR      4'h0 //表示cacheline遇到了硬件错误.
+    `define MODIFIED   4'h1 //表示cacheline为MODIFIED.
+    `define M_SRM_WB   4'h2 //表示cacheline为MODIFIED, 并且监听到了总线上的readmiss 信号, 正在执行写回操作.
+    `define M_SWM_WB   4'h3 //表示cacheline为MODIFIED, 并且监听到了总线上的writemiss信号, 正在执行写回操作.
+    `define M_WM_WB    4'h4 //表示cacheline为MODIFIED, 并且遇到了CPU writemiss, 正在执行写回操作.
+    `define M_RM_WB    4'h5 //表示cacheline为MODIFIED, 并且遇到了CPU readmiss,  正在执行写回操作.
+    `define M_WM_RD    4'h6 //表示cacheline为MODIFIED, 并且遇到了CPU writemiss, 已经执行完写回操作, 正在执行读取操作.
+    `define M_RM_RD    4'h7 //表示cacheline为MODIFIED, 并且遇到了CPU readmiss,  已经执行完写回操作, 正在执行读取操作.
+    `define SHARED     4'h8 //表示cacheline为SHARED.
+    `define S_RM_RD    4'h9 //表示cacheline为SHARED, 并且遇到了CPU readmiss, 正在执行读内存操作.
+    `define S_WM_RD    4'ha //表示cacheline为SHARED, 并且遇到了CPU writemiss, 正在执行读内存操作.
+    `define INVALID    4'hb //表示cacheline为INVALID.
+    `define I_RM_RD    4'hc //表示cacheline为INVALID, 并且遇到了read miss,正在执行读内存操作.
+    `define I_WM_RD    4'hd //表示cacheline为INVALID, 并且遇到了writemiss, 正在执行读内存操作.
+
 ```
 在时钟上升沿, 检测cacheLine的状态,或者复位信号, 并执行相应的动作.
 
 对于 `MODIFIED`状态: 如果检测到总线上的readmiss或者writemiss信号, 则执行写回操作, 并将状态置为 `M_SRM_WB` 或 `M_SWM_WB`. 否则, 检查CPU动作, 如果readhit/writehit, 则状态仍为 MODIFIED. 如果发现readmiss/writemiss, 则执行写回操作, 发送总线广播信号, 并将状态置为 `M_RM_WB` 或 `M_WM_WB` . 表示正在执行写回操作, 写回完成之后需要进行读取.
 
-对于 `M_SRM_WB` 状态, 本状态说明cache正在进行响应readmiss的写回操作, 此时检测memEn信号判断写回是否已经完成, 如果没有完成, 则等待. 如果写回已经完成, 则状态转为 SHARED. 这里需要注意, 因为本cache完成系会操作是因为监听到了其他cache的miss信息, 即本cache完成写回后, 另一cache要立刻读取写回的内存的, 因此, 此时如果本cache上也有CPU上的miss信息,即在本cache访存期间, CPU又执行了需要访存的指令, cache的处理需要stall一个cycle. 对于 `M_SWM_WB` 状态, 处理方式与 `M_SRM_WB` 大致相同, 只不过最后的状态不是转向 `SHARED`, 而是转向 `INVALID`.
+对于 `M_SRM_WB` 状态, 本状态说明cache正在进行响应readmiss的写回操作, 此时检测memEn信号判断写回是否已经完成, 如果没有完成, 则等待. 如果写回已经完成, 则状态转为 SHARED. 这里需要注意, 因为本cache完成写回操作是因为监听到了其他cache的miss信息, 即本cache完成写回后, 另一cache要立刻读取写回的内存的, 因此, 此时如果本cache上也有CPU上的miss信息,即在本cache访存期间, CPU又执行了需要访存的指令, cache的处理需要stall一个cycle. 对于 `M_SWM_WB` 状态, 处理方式与 `M_SRM_WB` 大致相同, 只不过最后的状态不是转向 `SHARED`, 而是转向 `INVALID`.
 
 对于 `M_WM_WB` 状态, 说说明该cacheline正在执行写回操作, 则首先要查询memEn判断写回是否已经完成, 如果没有完成, 则继续等待. 如果已经完成写回, 则准备进行读取. 但是在读取之前, 需要确保拥有这条数据的其他cache如果状态为Modified, 已经响应总线信号将数据写回. 则查询allowreadfromcache信号, 如果查询成功, 则开始读取, 进入 `M_WM_RD` 状态. 否则, 继续等待. 对于 `M_RM_WB` 状态, 动作与 `M_WM_WB` 相似, 不过下一状态为 `M_RM_RD`.
 
@@ -217,27 +218,29 @@ memory bus模块的schematic框图如下:
 #### 输入输出端口   ####
 memBus模块的输入输出端口列表及其相关含义如下: 
 ```verilog
-input clk,
-input reset,
 
-//interact with cache A
-input wire[`IOSTATEWIDTH-1:0] rwFromCacheA, 
-input wire[`ADDRWIDTH-1:0]    addrFromCacheA,
-input wire[`WORDWIDTH-1:0]    dataFromCacheA,
-output reg[`ADDRWIDTH-1:0]    dataToCacheA,
-output reg memEnA,
+    input clk,
+    input reset,
 
-//interact with cache B
-input wire[`IOSTATEWIDTH-1:0] rwFromCacheB,
-input wire[`ADDRWIDTH-1:0]    addrFromCacheB,
-input wire[`WORDWIDTH-1:0]    dataFromCacheB,
-output reg[`ADDRWIDTH-1:0]    dataToCacheB,
-output reg memEnB,
-output reg[`ERRWIDTH-1:0] errReg,
+    //interact with cache A
+    input wire[`IOSTATEWIDTH-1:0] rwFromCacheA, 
+    input wire[`ADDRWIDTH-1:0]    addrFromCacheA,
+    input wire[`WORDWIDTH-1:0]    dataFromCacheA,
+    output reg[`ADDRWIDTH-1:0]    dataToCacheA,
+    output reg memEnA,
 
-//debug output 
-output[`IOSTATEWIDTH-1:0] debugRwToMem,
-output[7:0] debugDelay
+    //interact with cache B
+    input wire[`IOSTATEWIDTH-1:0] rwFromCacheB,
+    input wire[`ADDRWIDTH-1:0]    addrFromCacheB,
+    input wire[`WORDWIDTH-1:0]    dataFromCacheB,
+    output reg[`ADDRWIDTH-1:0]    dataToCacheB,
+    output reg memEnB,
+    output reg[`ERRWIDTH-1:0] errReg,
+
+    //debug output 
+    output[`IOSTATEWIDTH-1:0] debugRwToMem,
+    output[7:0] debugDelay
+
 ```
 * rwFromCacheA(B):   cacheA(B)发来的访存请求类型, 可以为read,write 或者idel
 * addrFromCacheA(B): cacheA(B)的访存地址
@@ -259,6 +262,7 @@ output[7:0] debugDelay
 processor1先对memory进行写操作, 而后processor2再进行写操作, 则应当有cache1进行写回并且invalidate自身,而cache2状态为modified.
 测试代码如下: 
 ```verilog
+
     clk            = 1'b0;
     reset          = 1'b0;
     code1.codeSize = 3;
@@ -277,29 +281,33 @@ processor1先对memory进行写操作, 而后processor2再进行写操作, 则�
     $display("time:%d,P2.r0:%d,C2.cachLine:%d,C2.state:%h", $time,P2.regFile[0],C2.cacheLine, C2.state);
     $display("mem[0]:%d", mb.mem[0]);
     $display("___________________________________________________");
+
 ```
 在这段代码中, Processor1中加载的指令为:
 ```asm
-set r0 3; // r0 = 3
-store mem[0] r0; //store value of r0 to mem[0]
-nop;
+
+    set r0 3; // r0 = 3
+    store mem[0] r0; 
+    nop;
+
 ```
 
 Processor2中加载的指令为: 
 ```asm
-set r0 4; 
-nop;
-store mem[0] r0;
+
+    set r0 4; 
+    nop;
+    store mem[0] r0;
+
+
 ```
 测试结果如下: 
 ![testCase1Result](./image/testCase1Result.png)
-```
-# Write After Write
-# P1.r0:     3, C1.cachLine:    3,C1.state:b
-# P2.r0:     4, C2.cachLine:    4,C2.state:1
-# mem[0]:    3
-# ___________________________________________________
-```
+> # Write After Write
+> # P1.r0:     3, C1.cachLine:    3,C1.state:b
+> # P2.r0:     4, C2.cachLine:    4,C2.state:1
+> # mem[0]:    3
+
 可以看到, 仿真完成后, cache1的值为3, 状态为 `INVALID`, 而内存中的值也为3, 这是cache1写回的结果, 而cache2的状态为 `MODIFIED`, 值为4, cache2并没有写回, 所以cache2中的值是最新的.
 
 测试波形图如下:
@@ -310,44 +318,50 @@ store mem[0] r0;
 
 测试代码如下: 
 ```verilog 
-code1.codeSize = 3;
-code2.codeSize = 3;
-code1.codes[0] = {`SET, `R0,    `WORDWIDTH'd3}; //p1.r0 = 3
-code1.codes[1] = {`ST,  `R0,    `ADDRWIDTH'd0};  //mem[0] = p1.r0, write miss
-code1.codes[2] = {`NOP, `R0,    `WORDWIDTH'd0};
-code2.codes[0] = {`SET, `R0,    `WORDWIDTH'd4}; //p1.r0 = 3
-code2.codes[1] = {`NOP, `R0,    `WORDWIDTH'd0};
-code2.codes[2] = {`LD,  `R0,    `ADDRWIDTH'd0};  //mem[0] = p1.r0, write miss
-reset          = 1'b1;
-#20 reset      = 1'b0;
-#1000;
-$display("Read After Write");
-$display("time:%d,P1.r0:%d,C1.cachLine:%d,C1.state:%h",$time,P1.regFile[0],C1.cacheLine, C1.state);
-$display("time:%d,P2.r0:%d,C2.cachLine:%d,C2.state:%h",$time,P2.regFile[0],C2.cacheLine, C2.state);
-$display("mem[0]:%d", mb.mem[0]);
-$display("___________________________________________________");
+
+    code1.codeSize = 3;
+    code2.codeSize = 3;
+    code1.codes[0] = {`SET, `R0,    `WORDWIDTH'd3}; //p1.r0 = 3
+    code1.codes[1] = {`ST,  `R0,    `ADDRWIDTH'd0};  //mem[0] = p1.r0, write miss
+    code1.codes[2] = {`NOP, `R0,    `WORDWIDTH'd0};
+    code2.codes[0] = {`SET, `R0,    `WORDWIDTH'd4}; //p1.r0 = 3
+    code2.codes[1] = {`NOP, `R0,    `WORDWIDTH'd0};
+    code2.codes[2] = {`LD,  `R0,    `ADDRWIDTH'd0};  //mem[0] = p1.r0, write miss
+    reset          = 1'b1;
+    #20 reset      = 1'b0;
+    #1000;
+    $display("Read After Write");
+    $display("time:%d,P1.r0:%d,C1.cachLine:%d,C1.state:%h",$time,P1.regFile[0],C1.cacheLine, C1.state);
+    $display("time:%d,P2.r0:%d,C2.cachLine:%d,C2.state:%h",$time,P2.regFile[0],C2.cacheLine, C2.state);
+    $display("mem[0]:%d", mb.mem[0]);
+    $display("___________________________________________________");
 ```
 
 在这段代码中, Processor1加载的指令为:
 ```asm
-set r0 3;
-store mem[0] r0;
-nop;
+
+    set r0 3
+
+    store mem[0] r0
+
+    nop
+
 ```
 在这段代码中, Processor2加载的指令为:
 ```asm
-set r0 4;
-nop;
-load r0 mem[0];
+
+    set r0 4
+
+    nop
+
+    load r0 mem[0]
+
 ```
 测试结果如下:
-```
-# Read After Write
-# time:                2042,P1.r0:    3,C1.cachLine:    3,C1.state:8
-# time:                2042,P2.r0:    3,C2.cachLine:    3,C2.state:8
-# mem[0]:    3
-# ___________________________________________________
-```
+> # Read After Write
+> # time:                2042,P1.r0:    3,C1.cachLine:    3,C1.state:8
+> # time:                2042,P2.r0:    3,C2.cachLine:    3,C2.state:8
+> # mem[0]:    3
 由结果可知, processor2的load指令执行完成后, memory,register,cachline相关数据均为3, 且cacheline状态为 `SHARED`.
 
 测试波形图如下:
@@ -358,52 +372,64 @@ load r0 mem[0];
 ### 测例3  special read after write ###
 测试代码如下: 
 ```verilog
-code1.codeSize = 4;
-code2.codeSize = 5;
-code1.codes[0] = {`SET, `R0,    `WORDWIDTH'd3}; //p1.r0 = 3
-code1.codes[1] = {`ST,  `R0,    `ADDRWIDTH'd0};  //mem[0] = p1.r0, write miss
-code1.codes[2] = {`NOP, `R0,    `WORDWIDTH'd0};
-code1.codes[3] = {`LD,  `R0,    `WORDWIDTH'd0};
-code2.codes[0] = {`SET, `R0,    `WORDWIDTH'd4}; //p1.r0 = 3
-code2.codes[1] = {`NOP, `R0,    `WORDWIDTH'd0};
-code2.codes[2] = {`NOP, `R0,    `WORDWIDTH'd0};
-code2.codes[3] = {`NOP, `R0,    `WORDWIDTH'd0};
-code2.codes[4] = {`ST,  `R0,    `ADDRWIDTH'd0};
-reset          = 1'b1;
-#20 reset      = 1'b0;
-#1500;
-$display("Special Read After Write");
-$display("time:%d,P1.r0:%d,C1.cachLine:%d,C1.state:%h",$time,P1.regFile[0],C1.cacheLine, C1.state);
-$display("time:%d,P2.r0:%d,C2.cachLine:%d,C2.state:%h",$time,P2.regFile[0],C2.cacheLine, C2.state);
-$display("mem[0]:%d", mb.mem[0]);
-$display("___________________________________________________");
+
+    code1.codeSize = 4;
+    code2.codeSize = 5;
+    code1.codes[0] = {`SET, `R0,    `WORDWIDTH'd3}; //p1.r0 = 3
+    code1.codes[1] = {`ST,  `R0,    `ADDRWIDTH'd0};  //mem[0] = p1.r0, write miss
+    code1.codes[2] = {`NOP, `R0,    `WORDWIDTH'd0};
+    code1.codes[3] = {`LD,  `R0,    `WORDWIDTH'd0};
+    code2.codes[0] = {`SET, `R0,    `WORDWIDTH'd4}; //p1.r0 = 3
+    code2.codes[1] = {`NOP, `R0,    `WORDWIDTH'd0};
+    code2.codes[2] = {`NOP, `R0,    `WORDWIDTH'd0};
+    code2.codes[3] = {`NOP, `R0,    `WORDWIDTH'd0};
+    code2.codes[4] = {`ST,  `R0,    `ADDRWIDTH'd0};
+    reset          = 1'b1;
+    #20 reset      = 1'b0;
+    #1500;
+    $display("Special Read After Write");
+    $display("time:%d,P1.r0:%d,C1.cachLine:%d,C1.state:%h",$time,P1.regFile[0],C1.cacheLine, C1.state);
+    $display("time:%d,P2.r0:%d,C2.cachLine:%d,C2.state:%h",$time,P2.regFile[0],C2.cacheLine, C2.state);
+    $display("mem[0]:%d", mb.mem[0]);
+    $display("___________________________________________________");
+
+
+
 ```
 
 在这段测例中, Processor1加载的代码为
 ```asm
-set r0 3;
-store mem[0] r0;
-nop;
-load r0 mem[0]
+
+    set r0 3
+
+    store mem[0] r0
+
+    nop
+
+    load r0 mem[0]
+
 ```
 
 在这段测例中, Processor2加载的代码为
 ```asm
-set r0 4;
-nop;
-nop;
-nop;
-store mem[0] r0;
+
+    set r0 4;
+
+    nop;
+
+    nop;
+
+    nop;
+
+    store mem[0] r0;
 ```
 注意, 这里Processor1中的`load`指令是第四条指令, 而processor2中的`store`指令是第五条指令, 但是因为访存延迟超过5个clock cycle, 因此, 实际上是Processor2的store指令先执行, 而Processor1的`load`指令后执行, 这里是否需要加入一个同步机制我目前还没有很成熟的想法, 因为我觉得程序的行为应该是在访存延迟为0跟访存延迟很大时一致的. 否则, 对于相同的processor, 换一个差一点的内存, 是否就需要编译器重新生成不同的代码? 编译器是否需要知道CPU的访存延迟? 在这方面, 我的相关知识还比较匮乏. 
 
 测试结果如下: 
-```
-# Special Read After Write
-# time:                8082,P1.r0:    4,C1.cachLine:    4,C1.state:8
-# time:                8082,P2.r0:    4,C2.cachLine:    4,C2.state:8
-# mem[0]:    4
-```
+> # Special Read After Write
+> # time:                8082,P1.r0:    4,C1.cachLine:    4,C1.state:8
+> # time:                8082,P2.r0:    4,C2.cachLine:    4,C2.state:8
+> # mem[0]:    4
 可以看出这里Processor1在processor2执行完 `store`操作之后才进行读操作, 因而发生readmiss, 并导致cache2执行写回动作. 因而memory中的值为4, 而最后两个cache中的状态均为 `SHARED`. 
 
 测试波形图如下:
@@ -412,6 +438,8 @@ store mem[0] r0;
 从波形图上可以看出, processor1的 `load`操作是在 Processor2的`store`操作之后完成的. 而processor1的状态转换为 `INVALID`-> `I_WM_RD`->`MODIFIED`->`M_SWM_WB`->`INVALID`->`I_RM_RD`->`SHARED`, 说明它首先经历了一个 `INVALID`遭遇write miss而变成 `MODIFIED`的状态转换, 随后立即监听到另一个cache广播的write miss信号, 而看processor2的状态转换图, 初始为`INVALID`状态, 遭遇writemiss后等待cache1写回, 等待写回完成后,读取内存并修改, 状态称为`MODIFIED`, 随后立即检测到cache1广播的readmiss状态, 将数据写回, 并状态变为`SHARED`.
 
 ## 综合结果 ##
+综合结果及report在(todo)中, 下面为找出的critical path, 在时钟周期为1GHz时可以满足时钟约束.
+![synthesis](./image/criticalPath.png)
 
 ## TODO ##
 目前为了容易理解, 设置了许多中间状态, 有许多状态的行为其实没有什么区别, 只是执行动作后跳转到的下一状态不同而已, 这些状态应该可以合并为同一状态, 理由相关的条件判断确定下一个状态即可.
