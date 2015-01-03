@@ -336,9 +336,15 @@ always @(posedge clk) begin
                     addrToCache   = addrFromCPU;
                     cacheEnToCPU  = 0;
                     if(allowReadFromCache || allowReadFromCacheAddr != addrFromCPU) begin 
-                        rwToMem   = `RD;
-                        addrToMem = addrFromCPU;
-                        state     = `S_RM_RD;
+                        if(stall == 0) begin
+                            rwToMem   = `RD;
+                            addrToMem = addrFromCPU;
+                            state     = `S_RM_RD;
+                        end 
+                        else begin 
+                            stall = 0;
+                            state = `SHARED;
+                        end
                     end
                     else begin 
                         state = `SHARED; 
@@ -351,11 +357,17 @@ always @(posedge clk) begin
                     cacheEnToCPU  = 0;
                     
                     if(allowReadFromCache || allowReadToCacheAddr != addrFromCPU) begin 
-                        rwToMem              = `RD;
-                        addrToMem            = addrFromCPU;
-                        state                = `S_WM_RD;
-                        allowReadToCache     = 0;
-                        allowReadToCacheAddr = addrFromCPU;
+                        if(stall == 0) begin
+                            rwToMem              = `RD;
+                            addrToMem            = addrFromCPU;
+                            state                = `S_WM_RD;
+                            allowReadToCache     = 0;
+                            allowReadToCacheAddr = addrFromCPU;
+                        end
+                        else begin 
+                            stall = 0;
+                            state = `SHARED;
+                        end
                     end 
                     else begin 
                         state = `SHARED; 

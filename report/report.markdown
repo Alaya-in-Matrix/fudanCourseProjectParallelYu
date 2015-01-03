@@ -23,7 +23,7 @@
 *   code memory. 每个processor的PC连接一个code memory, 其中存储该processor的指令. 测试时只要把指令存入, 就可以通过PC自动加载.
 
 完整的电路结构如下图所示:
-[all](./image/all.png)
+![all](./image/all.png)
 ## MSI模型 ##
 
 ## 电路模块设计细节 ##
@@ -68,7 +68,7 @@ end
 
 ### Processor   ### 
 Processor具有五条指令, 能够完成内存读写, 寄存器读写功能, 对Processor来说, cache是透明的,指令分为fetch and decode, exe, mem三个阶段, 没有流水线, 当访存时, CPU要stall. Processor的Schematic框图如下:
-[Processor](./image/processor.png)
+![Processor](./image/processor.png)
 #### 输入输出端口   ####
 Processor的输入输出端口分别为:
 *   clk,reset:  时钟与复位输入.
@@ -110,10 +110,13 @@ end
 
 如果当前状态为mem, 则指令只可能是`ld`或者`st`, 如果不是, 说明有硬件错误, 转入error state
 当转入mem状态时, 或者cache目前正在执行其他访存动作(如响应其他cache总线广播的写回动作) 由cache输入的cacheEn会被置零, 当cache完成访存(hit或者miss并且完成访存)后, cacheEn会有一个正脉冲, 如果cacheEn为0, 则等待, 如果检测到cacheEn为1, 则fetch下一条指令. 如下图所示:
-[cacheEn](./image/cacheEn.png)
+![cacheEn](./image/cacheEn.png)
 ### Cache   ### 
+为简单起见, cache只设置了一个cacheLine, 同时每个block中只有一个word, 则比较hit/miss就是只要查看cacheline的addr进行比较即可. 当有多条cacheLine, 每个block中有多个word时, 需要对CPU穿来的address进行解码, 确定使用那条cacheLine以及数据在block中的offset.
+
 cache的schematic框图如下:
-[CACHE](./image/cache.png)
+![CACHE](./image/cache.png)
+
 #### 设计思路 ####
 cache是本设计的重点与难点, 基本状态转换关系为课程课件上的MSI状态转换图. 因为电路设计的经验不多, 在设计时, 遇到的困难主要有以下三点:
 1. 某个cycle同时监听到总线信息和CPU访存请求时的处理
@@ -126,15 +129,16 @@ cache是本设计的重点与难点, 基本状态转换关系为课程课件上�
 3. 两个cache之间的通信以及互动
 
 本设计对以上三个问题的解决方案为: 
-    1. cacheLine在每个clock cycle首先检查总线信息, 如果总线上有信息, 则优先处理总线信息.
-    2. 设置一些中间状态, 即除了MSI三个状态之外, 另设计一些中间状态表示状态转换的进程. 例如, 上面的MODIFIEDcacheline遭遇write miss为例, 新增了M_WM_WB和M_WM_RD两个状态, 于是原本modified to modified的状态转换关系现在变为modified->m_wm_wb->M_WM_RD->modified. 这些中间状态的前一个状态和目标状态都是唯一的. 此外, 像processor一样, 设置了一个error状态. 只可能从其他状态转入error状态, 不可能从error状态转入其他状态. 除非摁下reset键.
-    3. 因为是双核系统, 因此cache之间可以直接互联, 一个cache向另一个cache发送的信号有:
-        *    havMsgToCache:      表示遇到write miss或者read miss, 有需要广播的信息. 
-        *    addrToCache:        表示write miss或者write miss的数据地址.
-        *    rmToCache:          表示遇到read miss
-        *    wmToCache:          表示遇到write miss
-        *    invToCache:         invalidate信号
-        *    allowReadToCache:   响应其他cache的miss信号, 譬如遇到read miss而在本cache中为modified时, 在这个cache写回完毕之前, 不允许另一个cache发送访存信号, allowReadToCache置零.
+1. cacheLine在每个clock cycle首先检查总线信息, 如果总线上有信息, 则优先处理总线信息.
+2. 设置一些中间状态, 即除了MSI三个状态之外, 另设计一些中间状态表示状态转换的进程. 例如, 上面的MODIFIEDcacheline遭遇write miss为例, 新增了M_WM_WB和M_WM_RD两个状态, 于是原本modified to modified的状态转换关系现在变为modified->m_wm_wb->M_WM_RD->modified. 这些中间状态的前一个状态和目标状态都是唯一的. 此外, 像processor一样, 设置了一个error状态. 只可能从其他状态转入error状态, 不可能从error状态转入其他状态. 除非摁下reset键.
+3. 需要写内存不需要征得其他cache的同意, 因为能写回说明cacheline为MODIFIED, 但是需要读内存必须征得其他所有cache的同意.
+4. 因为是双核系统, 因此cache之间可以直接互联, 一个cache向另一个cache发送的信号有:
+   * havMsgToCache:      表示遇到write miss或者read miss, 有需要广播的信息. 
+   * addrToCache:        表示write miss或者write miss的数据地址.
+   * rmToCache:          表示遇到read miss
+   * wmToCache:          表示遇到write miss
+   * invToCache:         invalidate信号
+   * allowReadToCache:   响应其他cache的miss信号, 譬如遇到read miss而在本cache中为modified时, 在这个cache写回完毕之前, 不允许另一个cache发送访存信号, allowReadToCache置零.
 
 #### 输入输出端口 ####       
 输入输出端口列表如下:
@@ -170,30 +174,44 @@ output reg invToCache,                      //广播invalidate信号
 #### 状态关系转换 ####
 为一条cacheline定义了以下几种状态
 ```verilog
-`define ERROR      4'h0     //表示cacheline遇到了硬件错误.
-`define MODIFIED   4'h1     //表示cacheline为MODIFIED.
-`define M_SRM_WB   4'h2     //表示cacheline为MODIFIED, 并且监听到了总线上的readmiss 信号, 正在执行写回操作.
-`define M_SWM_WB   4'h3     //表示cacheline为MODIFIED, 并且监听到了总线上的writemiss信号, 正在执行写回操作.
-`define M_WM_WB    4'h4     //表示cacheline为MODIFIED, 并且遇到了CPU writemiss, 正在执行写回操作.
-`define M_RM_WB    4'h5     //表示cacheline为MODIFIED, 并且遇到了CPU readmiss,  正在执行写回操作.
-`define M_WM_RD    4'h6     //表示cacheline为MODIFIED, 并且遇到了CPU writemiss, 已经执行完写回操作, 正在执行读取操作.
-`define M_RM_RD    4'h7     //表示cacheline为MODIFIED, 并且遇到了CPU readmiss,  已经执行完写回操作, 正在执行读取操作.
-`define SHARED     4'h8     //表示cacheline为SHARED.
-`define S_RM_RD    4'h9     //表示cacheline为SHARED, 并且遇到了CPU readmiss, 正在执行读内存操作.
-`define S_WM_RD    4'ha     //表示cacheline为SHARED, 并且遇到了CPU writemiss, 正在执行读内存操作.
-`define INVALID    4'hb     //表示cacheline为INVALID.
-`define I_RM_RD    4'hc     //表示cacheline为INVALID, 并且遇到了read miss,正在执行读内存操作.
-`define I_WM_RD    4'hd     //表示cacheline为INVALID, 并且遇到了writemiss, 正在执行读内存操作.
+`define ERROR      4'h0 //表示cacheline遇到了硬件错误.
+`define MODIFIED   4'h1 //表示cacheline为MODIFIED.
+`define M_SRM_WB   4'h2 //表示cacheline为MODIFIED, 并且监听到了总线上的readmiss 信号, 正在执行写回操作.
+`define M_SWM_WB   4'h3 //表示cacheline为MODIFIED, 并且监听到了总线上的writemiss信号, 正在执行写回操作.
+`define M_WM_WB    4'h4 //表示cacheline为MODIFIED, 并且遇到了CPU writemiss, 正在执行写回操作.
+`define M_RM_WB    4'h5 //表示cacheline为MODIFIED, 并且遇到了CPU readmiss,  正在执行写回操作.
+`define M_WM_RD    4'h6 //表示cacheline为MODIFIED, 并且遇到了CPU writemiss, 已经执行完写回操作, 正在执行读取操作.
+`define M_RM_RD    4'h7 //表示cacheline为MODIFIED, 并且遇到了CPU readmiss,  已经执行完写回操作, 正在执行读取操作.
+`define SHARED     4'h8 //表示cacheline为SHARED.
+`define S_RM_RD    4'h9 //表示cacheline为SHARED, 并且遇到了CPU readmiss, 正在执行读内存操作.
+`define S_WM_RD    4'ha //表示cacheline为SHARED, 并且遇到了CPU writemiss, 正在执行读内存操作.
+`define INVALID    4'hb //表示cacheline为INVALID.
+`define I_RM_RD    4'hc //表示cacheline为INVALID, 并且遇到了read miss,正在执行读内存操作.
+`define I_WM_RD    4'hd //表示cacheline为INVALID, 并且遇到了writemiss, 正在执行读内存操作.
 ```
 在时钟上升沿, 检测cacheLine的状态,或者复位信号, 并执行相应的动作.
-对于MODIFIED状态: 如果检测到总线上的readmiss或者writemiss信号, 则执行写回操作, 并将状态置为M_SRM_WB/M_SWM_WB. 否则, 检查CPU动作, 如果readhit/writehit, 则状态仍为MODIFIED. 如果发现readmiss/writemiss, 则执行写回操作, 发送总线广播信号, 并将状态置为M_RM_WB或M_WM_WB. 表示正在执行写回操作, 写回完成之后需要进行读取.
 
-对于M_SRM_WB状态, 本状态说明cache正在进行响应readmiss的写回操作, 此时检测memEn信号判断写回是否已经完成, 如果没有完成, 则等待. 如果写回已经完成, 则状态转为SHARED. 这里需要注意, 因为本cache完成系会操作是因为监听到了其他cache的miss信息, 即本cache完成写回后, 另一cache要立刻读取写回的内存的, 因此, 此时如果本cache上也有CPU上的miss信息,即在本cache访存期间, CPU又执行了需要访存的指令, cache的处理需要stall一个cycle.
+对于 MODIFIED 状态: 如果检测到总线上的readmiss或者writemiss信号, 则执行写回操作, 并将状态置为 M_SRM_WB 或 M_SWM_WB. 否则, 检查CPU动作, 如果readhit/writehit, 则状态仍为 MODIFIED. 如果发现readmiss/writemiss, 则执行写回操作, 发送总线广播信号, 并将状态置为 M_RM_WB 或 M_WM_WB . 表示正在执行写回操作, 写回完成之后需要进行读取.
 
-对于M_SWM_WB状态, 处理方式与M_SRM_WB大致相同, 只不过最后的状态不是转向SHARED, 而是转向INVALID.
+对于 M_SRM_WB 状态, 本状态说明cache正在进行响应readmiss的写回操作, 此时检测memEn信号判断写回是否已经完成, 如果没有完成, 则等待. 如果写回已经完成, 则状态转为 SHARED. 这里需要注意, 因为本cache完成系会操作是因为监听到了其他cache的miss信息, 即本cache完成写回后, 另一cache要立刻读取写回的内存的, 因此, 此时如果本cache上也有CPU上的miss信息,即在本cache访存期间, CPU又执行了需要访存的指令, cache的处理需要stall一个cycle. 对于 M_SWM_WB 状态, 处理方式与 M_SRM_WB 大致相同, 只不过最后的状态不是转向 SHARED, 而是转向 INVALID.
 
-对于M_RM_WB
+对于 M_WM_WB 状态, 说说明该cacheline正在执行写回操作, 则首先要查询memEn判断写回是否已经完成, 如果没有完成, 则继续等待. 如果已经完成写回, 则准备进行读取. 但是在读取之前, 需要确保拥有这条数据的其他cache如果状态为Modified, 已经响应总线信号将数据写回. 则查询allowreadfromcache信号, 如果查询成功, 则开始读取, 进入 M_WM_RD 状态. 否则, 继续等待. 对于 M_RM_WB 状态, 动作与 M_WM_WB 相似, 不过下一状态为 M_RM_RD.
+
+对于 M_WM_RD 状态, 说明此时cacheline已经向memory发送了读取请求. 则此时需要不断查询memEn判断访存是否已经成功. 如果已经成功, 则将状态修改为 MODIFIED, 读取cacheline, 并修改相关数据., 说明一次CPU访存已经成功. 否则, 继续等待. 对于 M_RM_RD 状态, 动作与 M_WM_RD 类似, 不过最终状态为 SHARED.
+
+对于SHARED状态, 当检测到总线readmiss信号时, 不必响应, 状态依然为SHARED, 如果检测到总线writemiss或者invalidate信号, 将相应地址的cacheline状态置为INVALID. 如果readhit,则向CPU输出相关cacheline的数据, 如果writehit, 则修改相关cacheline的值, 并将相关cacheline的状态置为MODIFIED. 如果检测到CPU的readmiss或者writemiss, 此时需要读内存, 先征得其他cache的同意, 然后将状态置为S_RM_RD或者S_WM_RD. 并向memory发送访存请求. 
+
+对于S_RM_RD或者S_WM_RD状态, 需要查询memEn判断是否访存完毕, 如果完毕, 则将状态置为SHARED或者MODIFIED.
+
+对于INVALID状态, 不必响应总线请求, 所有的CPU请求均为miss. 对于readmiss,总线广播, 如果其他cache允许对该地址进行读取, 则将状态置为I_RM_RD. 对于writemiss, 动作相同, 不过状态要置为I_WM_RD; 
+
+对于I_WM_RD或者I_RM_RD, 则需要不断查询memEn判断访存是否成功, 如果成功, 读取内存数据, 进行修改(对于writemiss), 并将状态置为MODIFIED或者SHARED.
+
 ### Bus and Memory  ###
+#### 设计概述       ####
+使用reg变量模拟memory的行为, 通过一个计数器来模拟访存延迟, 通过一套优先级系统分派当两个cache同时进行访存时的内存占有权.
+#### 输入输出端口   ####
+#### 行为模型       ####
 ## 测试报告 ##
 ## 综合结果 ##
 
@@ -206,4 +224,4 @@ output reg invToCache,                      //广播invalidate信号
 * 量化研究方法
 * verilog教程
 
-<input type='hidden' id='markdowncodestyle' value='vs'>
+<input type='hidden' id='markdowncodestyle' value='googlecode'>
