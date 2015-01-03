@@ -1,0 +1,171 @@
+Information: Updating design information... (UID-85)
+ 
+****************************************
+Report : timing
+        -path full
+        -delay max
+        -nets
+        -max_paths 1
+        -transition_time
+Design : top
+Version: I-2013.12-SP3
+Date   : Sat Jan  3 18:38:22 2015
+****************************************
+
+Operating Conditions: tt_v1p2_25c   Library: scc65nll_hs_lvt_tt_v1p2_25c_ccs
+Wire Load Model Mode: top
+
+  Startpoint: ins_code2_proc2[21]
+              (input port clocked by clk)
+  Endpoint: P2_addrToMem_reg_0_
+            (rising edge-triggered flip-flop clocked by clk)
+  Path Group: INPUTS
+  Path Type: max
+
+Attributes:
+    d - dont_touch
+    u - dont_use
+   mo - map_only
+   so - size_only
+    i - ideal_net or ideal_network
+  inf - infeasible path
+
+  Point                        Fanout     Trans      Incr       Path      Attributes
+  ------------------------------------------------------------------------------------------
+  clock clk (rise edge)                              0.00       0.00
+  clock network delay (ideal)                        0.05       0.05
+  input external delay                               0.10       0.15 f
+  ins_code2_proc2[21] (in)                 0.03      0.01       0.16 f
+  ins_code2_proc2[21] (net)      3                   0.00       0.16 f
+  U2655/ZN (LVT_INHSV2)                    0.04      0.03       0.19 r
+  n2586 (net)                    4                   0.00       0.19 r
+  U2656/ZN (LVT_OAI22HSV2)                 0.04      0.04       0.23 f
+  n2948 (net)                    3                   0.00       0.23 f
+  U2657/ZN (LVT_NOR2HSV2)                  0.04      0.04       0.26 r
+  n548 (net)                     2                   0.00       0.26 r
+  U1660/ZN (LVT_INOR2HSV1)                 0.55      0.33       0.59 r    d 
+  n547 (net)                    17                   0.00       0.59 r    d 
+  U1656/ZN (HVT_MOAI22HSV0)                0.10      0.21       0.80 r    d 
+  n1093 (net)                    1                   0.00       0.80 r    d 
+  P2_addrToMem_reg_0_/D (LVT_DQHSV1)       0.10      0.00       0.80 r
+  data arrival time                                             0.80
+
+  clock clk (rise edge)                              1.00       1.00
+  clock network delay (ideal)                        0.05       1.05
+  clock uncertainty                                 -0.05       1.00
+  P2_addrToMem_reg_0_/CK (LVT_DQHSV1)                0.00       1.00 r
+  library setup time                                -0.03       0.97
+  data required time                                            0.97
+  ------------------------------------------------------------------------------------------
+  data required time                                            0.97
+  data arrival time                                            -0.80
+  ------------------------------------------------------------------------------------------
+  slack (MET)                                                   0.18
+
+
+  Startpoint: P1_counter_reg_2_
+              (rising edge-triggered flip-flop clocked by clk)
+  Endpoint: pc_proc1_code1[2]
+            (output port clocked by clk)
+  Path Group: OUTPUTS
+  Path Type: max
+
+Attributes:
+    d - dont_touch
+    u - dont_use
+   mo - map_only
+   so - size_only
+    i - ideal_net or ideal_network
+  inf - infeasible path
+
+  Point                        Fanout     Trans      Incr       Path      Attributes
+  ------------------------------------------------------------------------------------------
+  clock clk (rise edge)                              0.00       0.00
+  clock network delay (ideal)                        0.05       0.05
+  P1_counter_reg_2_/CK (LVT_DQHSV1)        0.10      0.00       0.05 r    i 
+  P1_counter_reg_2_/Q (LVT_DQHSV1)         0.10      0.15       0.20 r
+  pc_proc1_code1[2] (net)        4                   0.00       0.20 r
+  pc_proc1_code1[2] (out)                  0.10      0.00       0.20 r
+  data arrival time                                             0.20
+
+  clock clk (rise edge)                              1.00       1.00
+  clock network delay (ideal)                        0.05       1.05
+  clock uncertainty                                 -0.05       1.00
+  output external delay                             -0.10       0.90
+  data required time                                            0.90
+  ------------------------------------------------------------------------------------------
+  data required time                                            0.90
+  data arrival time                                            -0.20
+  ------------------------------------------------------------------------------------------
+  slack (MET)                                                   0.70
+
+
+  Startpoint: P2_addrToMem_reg_10_
+              (rising edge-triggered flip-flop clocked by clk)
+  Endpoint: C2_allowReadToCacheAddr_reg_0_
+            (rising edge-triggered flip-flop clocked by clk)
+  Path Group: clk
+  Path Type: max
+
+Attributes:
+    d - dont_touch
+    u - dont_use
+   mo - map_only
+   so - size_only
+    i - ideal_net or ideal_network
+  inf - infeasible path
+
+  Point                                       Fanout     Trans      Incr       Path      Attributes
+  ---------------------------------------------------------------------------------------------------------
+  clock clk (rise edge)                                             0.00       0.00
+  clock network delay (ideal)                                       0.05       0.05
+  P2_addrToMem_reg_10_/CK (LVT_DQHSV1)                    0.10      0.00       0.05 r    i 
+  P2_addrToMem_reg_10_/Q (LVT_DQHSV1)                     0.08      0.14       0.19 r
+  addr_P2_C2[10] (net)                          6                   0.00       0.19 r
+  U2383/Z (LVT_XOR2HSV0)                                  0.03      0.07       0.27 f
+  n2762 (net)                                   1                   0.00       0.27 f
+  U2384/ZN (LVT_NOR2HSV2)                                 0.03      0.03       0.30 r
+  n2767 (net)                                   1                   0.00       0.30 r
+  U2388/ZN (LVT_NAND4HSV2)                                0.04      0.04       0.34 f
+  n2770 (net)                                   1                   0.00       0.34 f
+  U2389/ZN (LVT_NOR2HSV2)                                 0.06      0.05       0.38 r
+  n2863 (net)                                   3                   0.00       0.38 r
+  U2390/Z (LVT_AND2HSV2)                                  0.05      0.07       0.45 r
+  n3077 (net)                                   6                   0.00       0.45 r
+  U2391/ZN (LVT_INHSV2)                                   0.02      0.02       0.47 f
+  n2772 (net)                                   1                   0.00       0.47 f
+  U2392/ZN (LVT_CLKNAND2HSV2)                             0.04      0.03       0.50 r
+  n2840 (net)                                   4                   0.00       0.50 r
+  U2398/ZN (LVT_NOR2HSV2)                                 0.02      0.02       0.52 f
+  n2775 (net)                                   2                   0.00       0.52 f
+  U2404/ZN (LVT_NAND2HSV2)                                0.03      0.03       0.55 r
+  n2975 (net)                                   3                   0.00       0.55 r
+  U2786/ZN (LVT_NOR2HSV2)                                 0.02      0.02       0.57 f
+  n2984 (net)                                   2                   0.00       0.57 f
+  U2788/ZN (LVT_NOR2HSV2)                                 0.04      0.03       0.60 r
+  n3017 (net)                                   2                   0.00       0.60 r
+  U2040/ZN (LVT_OAI211HSV1)                               0.06      0.05       0.65 f
+  n725 (net)                                    2                   0.00       0.65 f
+  U1192/Z (LVT_AND2HSV4)                                  0.02      0.04       0.69 f    d 
+  n731 (net)                                    3                   0.00       0.69 f    d 
+  U1488/ZN (LVT_NAND2HSV0)                                0.19      0.10       0.80 r    d 
+  n436 (net)                                   16                   0.00       0.80 r    d 
+  U1264/ZN (HVT_OAI222HSV0)                               0.12      0.17       0.97 f    d 
+  n1036 (net)                                   1                   0.00       0.97 f    d 
+  C2_allowReadToCacheAddr_reg_0_/D (LVT_DQHSV1)           0.12      0.00       0.97 f
+  data arrival time                                                            0.97
+
+  clock clk (rise edge)                                             1.00       1.00
+  clock network delay (ideal)                                       0.05       1.05
+  clock uncertainty                                                -0.05       1.00
+  C2_allowReadToCacheAddr_reg_0_/CK (LVT_DQHSV1)                    0.00       1.00 r
+  library setup time                                               -0.03       0.97
+  data required time                                                           0.97
+  ---------------------------------------------------------------------------------------------------------
+  data required time                                                           0.97
+  data arrival time                                                           -0.97
+  ---------------------------------------------------------------------------------------------------------
+  slack (MET)                                                                  0.00
+
+
+1

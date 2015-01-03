@@ -1,0 +1,734 @@
+ 
+****************************************
+Report : port
+        -verbose
+Design : top
+Version: I-2013.12-SP3
+Date   : Sat Jan  3 18:35:22 2015
+****************************************
+
+
+
+Attributes:
+    d - dont_touch_network
+    i - ideal_network
+
+                       Pin      Wire     Max     Max     Connection
+Port           Dir     Load     Load     Trans   Cap     Class      Attrs
+--------------------------------------------------------------------------------
+clk            in      0.0000   0.0000   --      --      --         d, i
+ins_code1_proc1[0]
+               in      0.0000   0.0000    1.43    0.25   --         
+ins_code1_proc1[1]
+               in      0.0000   0.0000    1.43    0.25   --         
+ins_code1_proc1[2]
+               in      0.0000   0.0000    1.43    0.25   --         
+ins_code1_proc1[3]
+               in      0.0000   0.0000    1.43    0.25   --         
+ins_code1_proc1[4]
+               in      0.0000   0.0000    1.43    0.25   --         
+ins_code1_proc1[5]
+               in      0.0000   0.0000    1.43    0.25   --         
+ins_code1_proc1[6]
+               in      0.0000   0.0000    1.43    0.25   --         
+ins_code1_proc1[7]
+               in      0.0000   0.0000    1.43    0.25   --         
+ins_code1_proc1[8]
+               in      0.0000   0.0000    1.43    0.25   --         
+ins_code1_proc1[9]
+               in      0.0000   0.0000    1.43    0.25   --         
+ins_code1_proc1[10]
+               in      0.0000   0.0000    1.43    0.25   --         
+ins_code1_proc1[11]
+               in      0.0000   0.0000    1.43    0.25   --         
+ins_code1_proc1[12]
+               in      0.0000   0.0000    1.43    0.25   --         
+ins_code1_proc1[13]
+               in      0.0000   0.0000    1.43    0.25   --         
+ins_code1_proc1[14]
+               in      0.0000   0.0000    1.43    0.25   --         
+ins_code1_proc1[15]
+               in      0.0000   0.0000    1.43    0.25   --         
+ins_code1_proc1[16]
+               in      0.0000   0.0000    1.43    0.25   --         
+ins_code1_proc1[17]
+               in      0.0000   0.0000    1.43    0.25   --         
+ins_code1_proc1[18]
+               in      0.0000   0.0000    1.43    0.25   --         
+ins_code1_proc1[19]
+               in      0.0000   0.0000    1.43    0.25   --         
+ins_code1_proc1[20]
+               in      0.0000   0.0000    1.43    0.25   --         
+ins_code1_proc1[21]
+               in      0.0000   0.0000    1.43    0.25   --         
+ins_code1_proc1[22]
+               in      0.0000   0.0000    1.43    0.25   --         
+ins_code1_proc1[23]
+               in      0.0000   0.0000    1.43    0.25   --         
+ins_code2_proc2[0]
+               in      0.0000   0.0000    1.43    0.25   --         
+ins_code2_proc2[1]
+               in      0.0000   0.0000    1.43    0.25   --         
+ins_code2_proc2[2]
+               in      0.0000   0.0000    1.43    0.25   --         
+ins_code2_proc2[3]
+               in      0.0000   0.0000    1.43    0.25   --         
+ins_code2_proc2[4]
+               in      0.0000   0.0000    1.43    0.25   --         
+ins_code2_proc2[5]
+               in      0.0000   0.0000    1.43    0.25   --         
+ins_code2_proc2[6]
+               in      0.0000   0.0000    1.43    0.25   --         
+ins_code2_proc2[7]
+               in      0.0000   0.0000    1.43    0.25   --         
+ins_code2_proc2[8]
+               in      0.0000   0.0000    1.43    0.25   --         
+ins_code2_proc2[9]
+               in      0.0000   0.0000    1.43    0.25   --         
+ins_code2_proc2[10]
+               in      0.0000   0.0000    1.43    0.25   --         
+ins_code2_proc2[11]
+               in      0.0000   0.0000    1.43    0.25   --         
+ins_code2_proc2[12]
+               in      0.0000   0.0000    1.43    0.25   --         
+ins_code2_proc2[13]
+               in      0.0000   0.0000    1.43    0.25   --         
+ins_code2_proc2[14]
+               in      0.0000   0.0000    1.43    0.25   --         
+ins_code2_proc2[15]
+               in      0.0000   0.0000    1.43    0.25   --         
+ins_code2_proc2[16]
+               in      0.0000   0.0000    1.43    0.25   --         
+ins_code2_proc2[17]
+               in      0.0000   0.0000    1.43    0.25   --         
+ins_code2_proc2[18]
+               in      0.0000   0.0000    1.43    0.25   --         
+ins_code2_proc2[19]
+               in      0.0000   0.0000    1.43    0.25   --         
+ins_code2_proc2[20]
+               in      0.0000   0.0000    1.43    0.25   --         
+ins_code2_proc2[21]
+               in      0.0000   0.0000    1.43    0.25   --         
+ins_code2_proc2[22]
+               in      0.0000   0.0000    1.43    0.25   --         
+ins_code2_proc2[23]
+               in      0.0000   0.0000    1.43    0.25   --         
+reset          in      0.0000   0.0000   --      --      --         d, i
+pc_proc1_code1[0]
+               out     0.0079   0.0000   --      --      --         
+pc_proc1_code1[1]
+               out     0.0079   0.0000   --      --      --         
+pc_proc1_code1[2]
+               out     0.0079   0.0000   --      --      --         
+pc_proc1_code1[3]
+               out     0.0079   0.0000   --      --      --         
+pc_proc1_code1[4]
+               out     0.0079   0.0000   --      --      --         
+pc_proc1_code1[5]
+               out     0.0079   0.0000   --      --      --         
+pc_proc1_code1[6]
+               out     0.0079   0.0000   --      --      --         
+pc_proc1_code1[7]
+               out     0.0079   0.0000   --      --      --         
+pc_proc2_code2[0]
+               out     0.0079   0.0000   --      --      --         
+pc_proc2_code2[1]
+               out     0.0079   0.0000   --      --      --         
+pc_proc2_code2[2]
+               out     0.0079   0.0000   --      --      --         
+pc_proc2_code2[3]
+               out     0.0079   0.0000   --      --      --         
+pc_proc2_code2[4]
+               out     0.0079   0.0000   --      --      --         
+pc_proc2_code2[5]
+               out     0.0079   0.0000   --      --      --         
+pc_proc2_code2[6]
+               out     0.0079   0.0000   --      --      --         
+pc_proc2_code2[7]
+               out     0.0079   0.0000   --      --      --         
+
+
+              External  Max             Min                Min       Min
+              Number    Wireload        Wireload           Pin       Wire
+Port          Points    Model           Model              Load      Load
+--------------------------------------------------------------------------------
+clk                1      --              --              --        -- 
+ins_code1_proc1[0]
+                   1      --              --              --        -- 
+ins_code1_proc1[1]
+                   1      --              --              --        -- 
+ins_code1_proc1[2]
+                   1      --              --              --        -- 
+ins_code1_proc1[3]
+                   1      --              --              --        -- 
+ins_code1_proc1[4]
+                   1      --              --              --        -- 
+ins_code1_proc1[5]
+                   1      --              --              --        -- 
+ins_code1_proc1[6]
+                   1      --              --              --        -- 
+ins_code1_proc1[7]
+                   1      --              --              --        -- 
+ins_code1_proc1[8]
+                   1      --              --              --        -- 
+ins_code1_proc1[9]
+                   1      --              --              --        -- 
+ins_code1_proc1[10]
+                   1      --              --              --        -- 
+ins_code1_proc1[11]
+                   1      --              --              --        -- 
+ins_code1_proc1[12]
+                   1      --              --              --        -- 
+ins_code1_proc1[13]
+                   1      --              --              --        -- 
+ins_code1_proc1[14]
+                   1      --              --              --        -- 
+ins_code1_proc1[15]
+                   1      --              --              --        -- 
+ins_code1_proc1[16]
+                   1      --              --              --        -- 
+ins_code1_proc1[17]
+                   1      --              --              --        -- 
+ins_code1_proc1[18]
+                   1      --              --              --        -- 
+ins_code1_proc1[19]
+                   1      --              --              --        -- 
+ins_code1_proc1[20]
+                   1      --              --              --        -- 
+ins_code1_proc1[21]
+                   1      --              --              --        -- 
+ins_code1_proc1[22]
+                   1      --              --              --        -- 
+ins_code1_proc1[23]
+                   1      --              --              --        -- 
+ins_code2_proc2[0]
+                   1      --              --              --        -- 
+ins_code2_proc2[1]
+                   1      --              --              --        -- 
+ins_code2_proc2[2]
+                   1      --              --              --        -- 
+ins_code2_proc2[3]
+                   1      --              --              --        -- 
+ins_code2_proc2[4]
+                   1      --              --              --        -- 
+ins_code2_proc2[5]
+                   1      --              --              --        -- 
+ins_code2_proc2[6]
+                   1      --              --              --        -- 
+ins_code2_proc2[7]
+                   1      --              --              --        -- 
+ins_code2_proc2[8]
+                   1      --              --              --        -- 
+ins_code2_proc2[9]
+                   1      --              --              --        -- 
+ins_code2_proc2[10]
+                   1      --              --              --        -- 
+ins_code2_proc2[11]
+                   1      --              --              --        -- 
+ins_code2_proc2[12]
+                   1      --              --              --        -- 
+ins_code2_proc2[13]
+                   1      --              --              --        -- 
+ins_code2_proc2[14]
+                   1      --              --              --        -- 
+ins_code2_proc2[15]
+                   1      --              --              --        -- 
+ins_code2_proc2[16]
+                   1      --              --              --        -- 
+ins_code2_proc2[17]
+                   1      --              --              --        -- 
+ins_code2_proc2[18]
+                   1      --              --              --        -- 
+ins_code2_proc2[19]
+                   1      --              --              --        -- 
+ins_code2_proc2[20]
+                   1      --              --              --        -- 
+ins_code2_proc2[21]
+                   1      --              --              --        -- 
+ins_code2_proc2[22]
+                   1      --              --              --        -- 
+ins_code2_proc2[23]
+                   1      --              --              --        -- 
+reset              1      --              --              --        -- 
+pc_proc1_code1[0]
+                   1      --              --              --        -- 
+pc_proc1_code1[1]
+                   1      --              --              --        -- 
+pc_proc1_code1[2]
+                   1      --              --              --        -- 
+pc_proc1_code1[3]
+                   1      --              --              --        -- 
+pc_proc1_code1[4]
+                   1      --              --              --        -- 
+pc_proc1_code1[5]
+                   1      --              --              --        -- 
+pc_proc1_code1[6]
+                   1      --              --              --        -- 
+pc_proc1_code1[7]
+                   1      --              --              --        -- 
+pc_proc2_code2[0]
+                   1      --              --              --        -- 
+pc_proc2_code2[1]
+                   1      --              --              --        -- 
+pc_proc2_code2[2]
+                   1      --              --              --        -- 
+pc_proc2_code2[3]
+                   1      --              --              --        -- 
+pc_proc2_code2[4]
+                   1      --              --              --        -- 
+pc_proc2_code2[5]
+                   1      --              --              --        -- 
+pc_proc2_code2[6]
+                   1      --              --              --        -- 
+pc_proc2_code2[7]
+                   1      --              --              --        -- 
+
+                    Input Delay
+                  Min             Max       Related   Max
+Input Port    Rise    Fall    Rise    Fall   Clock  Fanout
+--------------------------------------------------------------------------------
+clk           --      --      --      --      --      -- 
+ins_code1_proc1[0]
+              0.05    0.05    0.10    0.10  clk       --    
+ins_code1_proc1[1]
+              0.05    0.05    0.10    0.10  clk       --    
+ins_code1_proc1[2]
+              0.05    0.05    0.10    0.10  clk       --    
+ins_code1_proc1[3]
+              0.05    0.05    0.10    0.10  clk       --    
+ins_code1_proc1[4]
+              0.05    0.05    0.10    0.10  clk       --    
+ins_code1_proc1[5]
+              0.05    0.05    0.10    0.10  clk       --    
+ins_code1_proc1[6]
+              0.05    0.05    0.10    0.10  clk       --    
+ins_code1_proc1[7]
+              0.05    0.05    0.10    0.10  clk       --    
+ins_code1_proc1[8]
+              0.05    0.05    0.10    0.10  clk       --    
+ins_code1_proc1[9]
+              0.05    0.05    0.10    0.10  clk       --    
+ins_code1_proc1[10]
+              0.05    0.05    0.10    0.10  clk       --    
+ins_code1_proc1[11]
+              0.05    0.05    0.10    0.10  clk       --    
+ins_code1_proc1[12]
+              0.05    0.05    0.10    0.10  clk       --    
+ins_code1_proc1[13]
+              0.05    0.05    0.10    0.10  clk       --    
+ins_code1_proc1[14]
+              0.05    0.05    0.10    0.10  clk       --    
+ins_code1_proc1[15]
+              0.05    0.05    0.10    0.10  clk       --    
+ins_code1_proc1[16]
+              0.05    0.05    0.10    0.10  clk       --    
+ins_code1_proc1[17]
+              0.05    0.05    0.10    0.10  clk       --    
+ins_code1_proc1[18]
+              0.05    0.05    0.10    0.10  clk       --    
+ins_code1_proc1[19]
+              0.05    0.05    0.10    0.10  clk       --    
+ins_code1_proc1[20]
+              0.05    0.05    0.10    0.10  clk       --    
+ins_code1_proc1[21]
+              0.05    0.05    0.10    0.10  clk       --    
+ins_code1_proc1[22]
+              0.05    0.05    0.10    0.10  clk       --    
+ins_code1_proc1[23]
+              0.05    0.05    0.10    0.10  clk       --    
+ins_code2_proc2[0]
+              0.05    0.05    0.10    0.10  clk       --    
+ins_code2_proc2[1]
+              0.05    0.05    0.10    0.10  clk       --    
+ins_code2_proc2[2]
+              0.05    0.05    0.10    0.10  clk       --    
+ins_code2_proc2[3]
+              0.05    0.05    0.10    0.10  clk       --    
+ins_code2_proc2[4]
+              0.05    0.05    0.10    0.10  clk       --    
+ins_code2_proc2[5]
+              0.05    0.05    0.10    0.10  clk       --    
+ins_code2_proc2[6]
+              0.05    0.05    0.10    0.10  clk       --    
+ins_code2_proc2[7]
+              0.05    0.05    0.10    0.10  clk       --    
+ins_code2_proc2[8]
+              0.05    0.05    0.10    0.10  clk       --    
+ins_code2_proc2[9]
+              0.05    0.05    0.10    0.10  clk       --    
+ins_code2_proc2[10]
+              0.05    0.05    0.10    0.10  clk       --    
+ins_code2_proc2[11]
+              0.05    0.05    0.10    0.10  clk       --    
+ins_code2_proc2[12]
+              0.05    0.05    0.10    0.10  clk       --    
+ins_code2_proc2[13]
+              0.05    0.05    0.10    0.10  clk       --    
+ins_code2_proc2[14]
+              0.05    0.05    0.10    0.10  clk       --    
+ins_code2_proc2[15]
+              0.05    0.05    0.10    0.10  clk       --    
+ins_code2_proc2[16]
+              0.05    0.05    0.10    0.10  clk       --    
+ins_code2_proc2[17]
+              0.05    0.05    0.10    0.10  clk       --    
+ins_code2_proc2[18]
+              0.05    0.05    0.10    0.10  clk       --    
+ins_code2_proc2[19]
+              0.05    0.05    0.10    0.10  clk       --    
+ins_code2_proc2[20]
+              0.05    0.05    0.10    0.10  clk       --    
+ins_code2_proc2[21]
+              0.05    0.05    0.10    0.10  clk       --    
+ins_code2_proc2[22]
+              0.05    0.05    0.10    0.10  clk       --    
+ins_code2_proc2[23]
+              0.05    0.05    0.10    0.10  clk       --    
+reset         --      --      --      --      --      -- 
+
+
+                    Driving Cell
+Input Port   Rise(min/max)      Fall(min/max)      Mult(min/max)  Attrs(min/max)
+--------------------------------------------------------------------------------
+ins_code1_proc1[0]
+             LVT_DRNHSV2/Q      LVT_DRNHSV2/Q        -- /  --     
+ins_code1_proc1[1]
+             LVT_DRNHSV2/Q      LVT_DRNHSV2/Q        -- /  --     
+ins_code1_proc1[2]
+             LVT_DRNHSV2/Q      LVT_DRNHSV2/Q        -- /  --     
+ins_code1_proc1[3]
+             LVT_DRNHSV2/Q      LVT_DRNHSV2/Q        -- /  --     
+ins_code1_proc1[4]
+             LVT_DRNHSV2/Q      LVT_DRNHSV2/Q        -- /  --     
+ins_code1_proc1[5]
+             LVT_DRNHSV2/Q      LVT_DRNHSV2/Q        -- /  --     
+ins_code1_proc1[6]
+             LVT_DRNHSV2/Q      LVT_DRNHSV2/Q        -- /  --     
+ins_code1_proc1[7]
+             LVT_DRNHSV2/Q      LVT_DRNHSV2/Q        -- /  --     
+ins_code1_proc1[8]
+             LVT_DRNHSV2/Q      LVT_DRNHSV2/Q        -- /  --     
+ins_code1_proc1[9]
+             LVT_DRNHSV2/Q      LVT_DRNHSV2/Q        -- /  --     
+ins_code1_proc1[10]
+             LVT_DRNHSV2/Q      LVT_DRNHSV2/Q        -- /  --     
+ins_code1_proc1[11]
+             LVT_DRNHSV2/Q      LVT_DRNHSV2/Q        -- /  --     
+ins_code1_proc1[12]
+             LVT_DRNHSV2/Q      LVT_DRNHSV2/Q        -- /  --     
+ins_code1_proc1[13]
+             LVT_DRNHSV2/Q      LVT_DRNHSV2/Q        -- /  --     
+ins_code1_proc1[14]
+             LVT_DRNHSV2/Q      LVT_DRNHSV2/Q        -- /  --     
+ins_code1_proc1[15]
+             LVT_DRNHSV2/Q      LVT_DRNHSV2/Q        -- /  --     
+ins_code1_proc1[16]
+             LVT_DRNHSV2/Q      LVT_DRNHSV2/Q        -- /  --     
+ins_code1_proc1[17]
+             LVT_DRNHSV2/Q      LVT_DRNHSV2/Q        -- /  --     
+ins_code1_proc1[18]
+             LVT_DRNHSV2/Q      LVT_DRNHSV2/Q        -- /  --     
+ins_code1_proc1[19]
+             LVT_DRNHSV2/Q      LVT_DRNHSV2/Q        -- /  --     
+ins_code1_proc1[20]
+             LVT_DRNHSV2/Q      LVT_DRNHSV2/Q        -- /  --     
+ins_code1_proc1[21]
+             LVT_DRNHSV2/Q      LVT_DRNHSV2/Q        -- /  --     
+ins_code1_proc1[22]
+             LVT_DRNHSV2/Q      LVT_DRNHSV2/Q        -- /  --     
+ins_code1_proc1[23]
+             LVT_DRNHSV2/Q      LVT_DRNHSV2/Q        -- /  --     
+ins_code2_proc2[0]
+             LVT_DRNHSV2/Q      LVT_DRNHSV2/Q        -- /  --     
+ins_code2_proc2[1]
+             LVT_DRNHSV2/Q      LVT_DRNHSV2/Q        -- /  --     
+ins_code2_proc2[2]
+             LVT_DRNHSV2/Q      LVT_DRNHSV2/Q        -- /  --     
+ins_code2_proc2[3]
+             LVT_DRNHSV2/Q      LVT_DRNHSV2/Q        -- /  --     
+ins_code2_proc2[4]
+             LVT_DRNHSV2/Q      LVT_DRNHSV2/Q        -- /  --     
+ins_code2_proc2[5]
+             LVT_DRNHSV2/Q      LVT_DRNHSV2/Q        -- /  --     
+ins_code2_proc2[6]
+             LVT_DRNHSV2/Q      LVT_DRNHSV2/Q        -- /  --     
+ins_code2_proc2[7]
+             LVT_DRNHSV2/Q      LVT_DRNHSV2/Q        -- /  --     
+ins_code2_proc2[8]
+             LVT_DRNHSV2/Q      LVT_DRNHSV2/Q        -- /  --     
+ins_code2_proc2[9]
+             LVT_DRNHSV2/Q      LVT_DRNHSV2/Q        -- /  --     
+ins_code2_proc2[10]
+             LVT_DRNHSV2/Q      LVT_DRNHSV2/Q        -- /  --     
+ins_code2_proc2[11]
+             LVT_DRNHSV2/Q      LVT_DRNHSV2/Q        -- /  --     
+ins_code2_proc2[12]
+             LVT_DRNHSV2/Q      LVT_DRNHSV2/Q        -- /  --     
+ins_code2_proc2[13]
+             LVT_DRNHSV2/Q      LVT_DRNHSV2/Q        -- /  --     
+ins_code2_proc2[14]
+             LVT_DRNHSV2/Q      LVT_DRNHSV2/Q        -- /  --     
+ins_code2_proc2[15]
+             LVT_DRNHSV2/Q      LVT_DRNHSV2/Q        -- /  --     
+ins_code2_proc2[16]
+             LVT_DRNHSV2/Q      LVT_DRNHSV2/Q        -- /  --     
+ins_code2_proc2[17]
+             LVT_DRNHSV2/Q      LVT_DRNHSV2/Q        -- /  --     
+ins_code2_proc2[18]
+             LVT_DRNHSV2/Q      LVT_DRNHSV2/Q        -- /  --     
+ins_code2_proc2[19]
+             LVT_DRNHSV2/Q      LVT_DRNHSV2/Q        -- /  --     
+ins_code2_proc2[20]
+             LVT_DRNHSV2/Q      LVT_DRNHSV2/Q        -- /  --     
+ins_code2_proc2[21]
+             LVT_DRNHSV2/Q      LVT_DRNHSV2/Q        -- /  --     
+ins_code2_proc2[22]
+             LVT_DRNHSV2/Q      LVT_DRNHSV2/Q        -- /  --     
+ins_code2_proc2[23]
+             LVT_DRNHSV2/Q      LVT_DRNHSV2/Q        -- /  --     
+
+
+               Max Drive      Min Drive      Resistance    Min    Min       Cell
+Input Port    Rise    Fall   Rise    Fall   Max     Min    Cap    Fanout    Deg
+--------------------------------------------------------------------------------
+clk           --      --     --      --     --      --     --     --        -- 
+ins_code1_proc1[0]
+              --      --     --      --     --      --     --     --        -- 
+ins_code1_proc1[1]
+              --      --     --      --     --      --     --     --        -- 
+ins_code1_proc1[2]
+              --      --     --      --     --      --     --     --        -- 
+ins_code1_proc1[3]
+              --      --     --      --     --      --     --     --        -- 
+ins_code1_proc1[4]
+              --      --     --      --     --      --     --     --        -- 
+ins_code1_proc1[5]
+              --      --     --      --     --      --     --     --        -- 
+ins_code1_proc1[6]
+              --      --     --      --     --      --     --     --        -- 
+ins_code1_proc1[7]
+              --      --     --      --     --      --     --     --        -- 
+ins_code1_proc1[8]
+              --      --     --      --     --      --     --     --        -- 
+ins_code1_proc1[9]
+              --      --     --      --     --      --     --     --        -- 
+ins_code1_proc1[10]
+              --      --     --      --     --      --     --     --        -- 
+ins_code1_proc1[11]
+              --      --     --      --     --      --     --     --        -- 
+ins_code1_proc1[12]
+              --      --     --      --     --      --     --     --        -- 
+ins_code1_proc1[13]
+              --      --     --      --     --      --     --     --        -- 
+ins_code1_proc1[14]
+              --      --     --      --     --      --     --     --        -- 
+ins_code1_proc1[15]
+              --      --     --      --     --      --     --     --        -- 
+ins_code1_proc1[16]
+              --      --     --      --     --      --     --     --        -- 
+ins_code1_proc1[17]
+              --      --     --      --     --      --     --     --        -- 
+ins_code1_proc1[18]
+              --      --     --      --     --      --     --     --        -- 
+ins_code1_proc1[19]
+              --      --     --      --     --      --     --     --        -- 
+ins_code1_proc1[20]
+              --      --     --      --     --      --     --     --        -- 
+ins_code1_proc1[21]
+              --      --     --      --     --      --     --     --        -- 
+ins_code1_proc1[22]
+              --      --     --      --     --      --     --     --        -- 
+ins_code1_proc1[23]
+              --      --     --      --     --      --     --     --        -- 
+ins_code2_proc2[0]
+              --      --     --      --     --      --     --     --        -- 
+ins_code2_proc2[1]
+              --      --     --      --     --      --     --     --        -- 
+ins_code2_proc2[2]
+              --      --     --      --     --      --     --     --        -- 
+ins_code2_proc2[3]
+              --      --     --      --     --      --     --     --        -- 
+ins_code2_proc2[4]
+              --      --     --      --     --      --     --     --        -- 
+ins_code2_proc2[5]
+              --      --     --      --     --      --     --     --        -- 
+ins_code2_proc2[6]
+              --      --     --      --     --      --     --     --        -- 
+ins_code2_proc2[7]
+              --      --     --      --     --      --     --     --        -- 
+ins_code2_proc2[8]
+              --      --     --      --     --      --     --     --        -- 
+ins_code2_proc2[9]
+              --      --     --      --     --      --     --     --        -- 
+ins_code2_proc2[10]
+              --      --     --      --     --      --     --     --        -- 
+ins_code2_proc2[11]
+              --      --     --      --     --      --     --     --        -- 
+ins_code2_proc2[12]
+              --      --     --      --     --      --     --     --        -- 
+ins_code2_proc2[13]
+              --      --     --      --     --      --     --     --        -- 
+ins_code2_proc2[14]
+              --      --     --      --     --      --     --     --        -- 
+ins_code2_proc2[15]
+              --      --     --      --     --      --     --     --        -- 
+ins_code2_proc2[16]
+              --      --     --      --     --      --     --     --        -- 
+ins_code2_proc2[17]
+              --      --     --      --     --      --     --     --        -- 
+ins_code2_proc2[18]
+              --      --     --      --     --      --     --     --        -- 
+ins_code2_proc2[19]
+              --      --     --      --     --      --     --     --        -- 
+ins_code2_proc2[20]
+              --      --     --      --     --      --     --     --        -- 
+ins_code2_proc2[21]
+              --      --     --      --     --      --     --     --        -- 
+ins_code2_proc2[22]
+              --      --     --      --     --      --     --     --        -- 
+ins_code2_proc2[23]
+              --      --     --      --     --      --     --     --        -- 
+reset         --      --     --      --     --      --     --     --        -- 
+
+
+               Max Tran        Min Tran
+Input Port    Rise    Fall    Rise    Fall
+--------------------------------------------------------------------------------
+clk           --      --      --      -- 
+ins_code1_proc1[0]
+              --      --      --      -- 
+ins_code1_proc1[1]
+              --      --      --      -- 
+ins_code1_proc1[2]
+              --      --      --      -- 
+ins_code1_proc1[3]
+              --      --      --      -- 
+ins_code1_proc1[4]
+              --      --      --      -- 
+ins_code1_proc1[5]
+              --      --      --      -- 
+ins_code1_proc1[6]
+              --      --      --      -- 
+ins_code1_proc1[7]
+              --      --      --      -- 
+ins_code1_proc1[8]
+              --      --      --      -- 
+ins_code1_proc1[9]
+              --      --      --      -- 
+ins_code1_proc1[10]
+              --      --      --      -- 
+ins_code1_proc1[11]
+              --      --      --      -- 
+ins_code1_proc1[12]
+              --      --      --      -- 
+ins_code1_proc1[13]
+              --      --      --      -- 
+ins_code1_proc1[14]
+              --      --      --      -- 
+ins_code1_proc1[15]
+              --      --      --      -- 
+ins_code1_proc1[16]
+              --      --      --      -- 
+ins_code1_proc1[17]
+              --      --      --      -- 
+ins_code1_proc1[18]
+              --      --      --      -- 
+ins_code1_proc1[19]
+              --      --      --      -- 
+ins_code1_proc1[20]
+              --      --      --      -- 
+ins_code1_proc1[21]
+              --      --      --      -- 
+ins_code1_proc1[22]
+              --      --      --      -- 
+ins_code1_proc1[23]
+              --      --      --      -- 
+ins_code2_proc2[0]
+              --      --      --      -- 
+ins_code2_proc2[1]
+              --      --      --      -- 
+ins_code2_proc2[2]
+              --      --      --      -- 
+ins_code2_proc2[3]
+              --      --      --      -- 
+ins_code2_proc2[4]
+              --      --      --      -- 
+ins_code2_proc2[5]
+              --      --      --      -- 
+ins_code2_proc2[6]
+              --      --      --      -- 
+ins_code2_proc2[7]
+              --      --      --      -- 
+ins_code2_proc2[8]
+              --      --      --      -- 
+ins_code2_proc2[9]
+              --      --      --      -- 
+ins_code2_proc2[10]
+              --      --      --      -- 
+ins_code2_proc2[11]
+              --      --      --      -- 
+ins_code2_proc2[12]
+              --      --      --      -- 
+ins_code2_proc2[13]
+              --      --      --      -- 
+ins_code2_proc2[14]
+              --      --      --      -- 
+ins_code2_proc2[15]
+              --      --      --      -- 
+ins_code2_proc2[16]
+              --      --      --      -- 
+ins_code2_proc2[17]
+              --      --      --      -- 
+ins_code2_proc2[18]
+              --      --      --      -- 
+ins_code2_proc2[19]
+              --      --      --      -- 
+ins_code2_proc2[20]
+              --      --      --      -- 
+ins_code2_proc2[21]
+              --      --      --      -- 
+ins_code2_proc2[22]
+              --      --      --      -- 
+ins_code2_proc2[23]
+              --      --      --      -- 
+reset         --      --      --      -- 
+
+
+                    Output Delay
+                  Min             Max      Related  Fanout
+Output Port   Rise    Fall    Rise    Fall  Clock     Load
+--------------------------------------------------------------------------------
+pc_proc1_code1[0]
+              0.05    0.05    0.10    0.10  clk       0.00  
+pc_proc1_code1[1]
+              0.05    0.05    0.10    0.10  clk       0.00  
+pc_proc1_code1[2]
+              0.05    0.05    0.10    0.10  clk       0.00  
+pc_proc1_code1[3]
+              0.05    0.05    0.10    0.10  clk       0.00  
+pc_proc1_code1[4]
+              0.05    0.05    0.10    0.10  clk       0.00  
+pc_proc1_code1[5]
+              0.05    0.05    0.10    0.10  clk       0.00  
+pc_proc1_code1[6]
+              0.05    0.05    0.10    0.10  clk       0.00  
+pc_proc1_code1[7]
+              0.05    0.05    0.10    0.10  clk       0.00  
+pc_proc2_code2[0]
+              0.05    0.05    0.10    0.10  clk       0.00  
+pc_proc2_code2[1]
+              0.05    0.05    0.10    0.10  clk       0.00  
+pc_proc2_code2[2]
+              0.05    0.05    0.10    0.10  clk       0.00  
+pc_proc2_code2[3]
+              0.05    0.05    0.10    0.10  clk       0.00  
+pc_proc2_code2[4]
+              0.05    0.05    0.10    0.10  clk       0.00  
+pc_proc2_code2[5]
+              0.05    0.05    0.10    0.10  clk       0.00  
+pc_proc2_code2[6]
+              0.05    0.05    0.10    0.10  clk       0.00  
+pc_proc2_code2[7]
+              0.05    0.05    0.10    0.10  clk       0.00  
+
+1
