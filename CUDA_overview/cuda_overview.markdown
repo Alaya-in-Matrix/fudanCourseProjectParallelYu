@@ -19,9 +19,9 @@ GPU相对CPU主要有以下三点优势:
 具体而言, 相比GPU, CPU需要处理更加通用的, 普适性的任务. 因而在设计时, CPU更侧重于逻辑操作, 会将大量的硬件用于控制逻辑以及缓存, 而GPU则更侧重高密度的浮点数运算. 因此在硬件设计上, 会更倾向于添加大量并行的运算单元,下图为CPU与GPU的硬件组成对比图: 
 <center><img style='margin:20px' src="./image/CPU_GPU_hardware_cmp.png"></center>
 设计上的差异, 使得在浮点数处理方面, 同时代的GPU往往远胜CPU, 下图为CPU-GPU的浮点数处理能力(GFLOPS)对比:
-<center><img width=480 style='margin:20px' src="./image/GPU_CPU_FLOPS.png"></center>
+<center><img width=400 style='margin:20px' src="./image/GPU_CPU_FLOPS.png"></center>
 下图为不同时代CPU与GPU的内存带宽对比: 
-<center><img width=480 style='margin:20px' src="./image/CPU_GPU_MEM_BANDWIDTH.png"></center>
+<center><img width=400 style='margin:20px' src="./image/CPU_GPU_MEM_BANDWIDTH.png"></center>
 
 CPU的一个核心(或者通过超线程技术虚拟将一个核心虚拟成的多个核心). 同一时刻通常只能运行一个线程的指令, 当线程数超过核心数时, 多个核心共享计算资源, 而当进行线程切换时, 必须要花费大量的clock cycle来保存上下文. 
 
@@ -47,7 +47,21 @@ CUDA为CPU-GPU异构编程, 程序的执行环境分为主机端(host)与设备�
 
 CUDA通过扩展的C语法编写程序, 支持三种函数, `host`函数,`global`函数与`device`函数. 函数默认为host函数, 即CPU上运行的代码, 这部分程序经由CUDA识别后, 交给传统的C编译器如`gcc`进行编译, 而`global`函数和`device`函数是运行在GPU上的程序, `global`为CPU调用的GPU函数, 而`device`函数则为GPU调用的GPU函数.
 
+host与device端的代码都是用与C语言语法相似的CUDA C编写, 后面会简要介绍CUDA C的语法. 
+
 ### 线程层次模型 block, thread, warp ###
+CUDA GPU中, 基本的串行执行单位称为线程(thread), 一定数量的线程被组织为一个线程块(block), 线程块的尺寸与维度由程序员确定, 即可以通过一维与两维索引(threadIdx)来索引线程块中的线程. 由程序员确保一个线程块中的线程能够乱序执行. 
+
+一定数量的线程块又被组织为一个grid, 同样的, 也可以通过多维索引(blockIdx)来索引一个grid中的block. 
+
+之所以使用两级线程组织, 是为了支持多种并行方式, 即在block之间的任务级(task level)block内线程的数据级(data level)并行. 在一个线程块中的线程在执行时会被分配到同一个Stream Multiprocessor上, 因此能够较为方便的以较小的开销进行通信与同步. 即通过片上共享内存进行通信, 通过`_syncthreads()`函数进行同步等, 而不同的block之间没有内置的通信机制, 只能够通过全局显存进行通信.
+
+在理论上, 同一个block内的线程之间可以执行完全不同的代码, 即通过threadIdx为索引到的各个线程分配不同的任务. 但实际的执行模型中, 还有warp这个概念, 一个warp是指一个block内线程号连续的一定数量的一束线程. 在截至目前的CUDA版本中, 一个warp有32个线程. GPU中的指令以warp为单位发射, 同一时刻, 一个warp中的线程总是执行相同的指令. 如果一个warp中的线程指令不同, 则warp中的每条指令都会被所有线程执行一遍. 后面会讲到, CUDA的SIMT(single instruction multi thread)模型, 其实仍然是SIMD的一种变种. 
+
+关于warp, 有两点结论, 第一是同一个warp内的线程(可以通过threadIdx % 32获得warp号)是不需要同步的, 因为它们在硬件层面强制同步, 程序员大可不必为属于同一个warp的两个线程设置同步机制, 第二是如果一个warp中的线程指令差异很大, 例如两个线程的程序完全不同或者线程有太多的条件控制跳转逻辑等. 就会非常影响执行效率. 
+
+需要注意的是, warp对程序员是透明的, 它并不是编程模型中的概念, 而是执行模型中的概念, 无视warp并不会影响程序的正确性, 而只是影响效率而已. 这点类似于传统CPU编程中cache的作用, cache对程序员也是透明的, 在C的模型中只有CPU与内存这两个概念, 并没有专门操作cache的机制, 然而, 如果代码不够cache-friendly, 会极大的影响程序速度. 反之, 如果程序对cache友好, 甚至可能会在多核环境下因为多核带来的更大cache而使程序达到超线性加速比. 
+
 
 ## CUDA 存储器模型 ##
 ## CUDA 执行模型 ##
