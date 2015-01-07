@@ -1,1 +1,4 @@
-* async执行是不是要提一下
+```haskell
+fm self 0 = 1
+fm self n = n * (self self $ n-1)
+```

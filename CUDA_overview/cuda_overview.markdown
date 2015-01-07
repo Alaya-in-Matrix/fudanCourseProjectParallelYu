@@ -47,6 +47,23 @@ CUDA为CPU-GPU异构编程, 程序的执行环境分为主机端(host)与设备�
 
 CUDA通过扩展的C语法编写程序, 支持三种函数, `host`函数,`global`函数与`device`函数. 函数默认为host函数, 即CPU上运行的代码, 这部分程序经由CUDA识别后, 交给传统的C编译器如`gcc`进行编译, 而`global`函数和`device`函数是运行在GPU上的程序, `global`为CPU调用的GPU函数, 而`device`函数则为GPU调用的GPU函数.
 
+
+运行在GPU上的`global`函数称为kernel(内核函数), CUDA C扩展了C的语法, 允许程序员用C语言定义在GPU上运行的函数. 内核函数通过`__global__`限定符定义, 在GPU上执行的线程层次与数量通过<<<…>>>语法配置.下面是一个简单的kernel函数定义与调用的例子:
+```c
+// Kernel definition
+__global__ void vecAdd(float* A, float* B, float* C)
+{
+    int i = threadIdx.x;
+    C[i] = A[i] + B[i];
+}
+int main()
+{
+    //...
+    // Kernel invocation with N threads
+    vecAdd<<<1, N>>>(A, B, C);
+    //...
+}
+```
 host与device端的代码都是用与C语言语法相似的CUDA C编写, 后面会简要介绍CUDA C的语法. 
 
 ### 线程层次模型 block, thread, warp ###
@@ -64,9 +81,79 @@ CUDA GPU中, 基本的串行执行单位称为线程(thread), 一定数量的线
 
 
 ## CUDA 存储器模型 ##
-## CUDA 执行模型 ##
-## CUDA 新特性 ##
-## thrust库 ##
+下图为CUDA的内存模型示意图. 可以看出, CUDA模型中的内存分为GPU内部的片上存储器和片外显存. 
+
+<center><img width=480 style='margin:20px' src="./image/CUDA_MEM_MODEL.png"></center>
+
+CUDA采用多级存储器模型, 每个线程拥有自己的寄存器(register)和私有的局部内存(local memory), 每个block拥有对block内的线程可见的共享内存(shared memory), 用于线程之间的数据同步. 所有的线程, 都可以对全局内存进行访问.
+
+为了节约内存带宽, CUDA 之中还有特殊设计的纹理内存(texture memory)和常量内存(constant memory). 其中, 寄存器与共享内存是GPU上的片内存储器, 访存速度较快, 其他类型的存储器则位于片外的存储器上, 具有较高的访存延迟. 不过CUDA可以通过零开销的线程切换来隐藏延迟. 
+
+需要注意的一点是, 线程私有的局部内存(local memory)并不是片上内存, 而是在显存上分出的一块只对某个线程可见的内存, 因此, 对local memory的访问开销很大.
+
+### 寄存器与局部内存 ###
+
+寄存器(register)是GPU的片上高速缓存, 执行单元可以以极低的延迟访问寄存器. 寄存器有很高的带宽. 寄存器数量虽然可观, 但会平均分给并行执行的线程, 因而当线程数较多时每个线程拥有的寄存器数量就非常有限了. 
+
+当寄存器数量不够, 比如线程定义了太多私有变量或者在线程内定义了大数组时, 变量就会被分配到local 
+
+对每个线程而言, 局部存储器(local memory)也是私有的. 当寄存器被消耗完, 线程的数据就会被存储在局部存储器中.  局部存储器并不是片上存储器, 而是位于GPU之外的显存上, 因此, 对局部存储器的访问速度很慢. 因此, CUDA程序设计时, 应对线程的私有变量大小进行预判, 不应为线程分配过多的私有变量, 应尽量避免因寄存器数量不够而将变量分配到局部内存上. 如前所述, local memory位于片外显存, 访问开销很大, 因此, 不应该分配过多线程或者在单个线程中定义太多私有变量. 
+
+### 块内共享内存 ###
+
+共享存储器(shared memory)也是GPU片内高速存储器, 它是一块可以白同一block中所有的线程访问的可读写存储器, 访问共享存储器的速度几乎和访问寄存器一样快, 是实现线程间通信的延迟最小的方法, 共享存储器可用于实现多种功能, 如用于保存共用的计数器, 或者block的公用结构. 
+
+共享存储器可以静态分配, 也可以动态分配, 如果动态分配, 则共享存储器的大小需要在kernel中用`extern`声明.
+
+下面是一个通过共享存储器进行数组求和的程序例子:
+```c++
+__global__ void sumReduction(float *sum)
+{
+	extern __shared__ float cache[];
+	int idx    = threadIdx.x;
+	cache[idx] = 0;
+    /*
+     * ... calc cache[idx] for each thread
+     */
+	__syncthreads();
+	int i=blockDim.x/2;//要求blockDim.x为2的幂
+	while(i != 0)
+	{
+		if(idx<i)
+			cache[idx]+=cache[idx+i];
+		__syncthreads(); //如果线程数小于32(一个warp), 则不必同步
+		i/=2;
+	}
+	*sum=cache[0];
+}
+```
+
+### 全局内存 ###
+全局存储器(global memory)位于片外显存, 主机端/设备端均可以进行读写. 任意线程都能读写全局存储器的任意位置. 全局存储器能够提供很高的带宽, 但同时也有较高的访存延迟. 
+
+对全局存储器的访问, 可以通过CUDA提供的运行时API或驱动API来实现, 使用CUDA C的关键字__device__定义的变量也会分配到全局存储器. 
+
+常用的CPU-GPU互动方式就是, CPU分配显存, 然后调用kernel函数, kernel函数运行完成后, 再从显存copy数据到CPU内存. 
+
+### 常量内存与纹理内存 ### 
+常量内存(constant memory)是只读的地址空间, 位于片外显存, 但拥有缓存加速. 常数存储器空间较小, 在CUDA程序中用于存储需要频繁访问的只读参数.用以节约带宽. 
+
+纹理存储器(texture)也是只读存储器, 主要就是用于图像编程当中的纹理這染等作用, 也可以称之为图像处理的专门单元所设置的一种存储器. 它主要存储数据的模式是以数组的形式存储在显存当中的. 这些数组包含了一维, 二维以及三维. 但是它所能声明的数组的大小要比常量存储器大的多, 而且也具有缓存加速的功能, 多被用于图像处理, 在查找表中也有着广泛的使用. 所以, 图像编程过程中经常的被用于数据量比较大的访问, 这些访问包含了对齐及非对齐的, 以及随机的数据. 
+
+## CUDA硬件映射  ##
+支持CUDA的GPU中, 一个具有完整的取指, 译码, 发射, 执行功能的处理单元被称为一个流多处理器(SM, Stream Multiprocessor), 下图为Kepler架构GPU的一个SM的框图. 每一个SM中有多个计算单元, 被称为流处理器(SP, Stream Processor), 每个SP中都包含浮点数与整数运算逻辑, 同时SM中还有大量双精度浮点数运算单元(DPU), 以及特殊的浮点数运算(如专门为计算平方根倒数运算)而设计的特殊浮点数运算单元(SFU). 不同架构的GPU中, 每个SM中的SP数量不同, Tesla架构中, 每个SM含有8个SP, Fermi架构中, 每个SM含有48个SP, Kepler架构中, 每个SM中含有192个SP. 	
+
+<center><img width=640 style='margin:20px' src="./image/KEPLER_GPU.png"></center>
+
+在nvidia公司的商业宣传中, GPU往往被说成拥有数百个乃至上千个核, 这里的核通常指SP的数量, 而非SM的数量. 事实上, SP只是执行单元, 并不是完整的处理核心. 隶属同一SM的所有SP公用一套取指令与发射单元, 也公用一块共享存储器. 
+
+CUDA的kernel函数被配置为不同block并行执行, 同一个block中的线程需要进行通信与数据共享, 因此一个block会被映射到一个SM上执行, 而block中的每一个线程则被发射到一个SP上执行. 同一个SM中可以有多个活动线程块(active block)以隐藏延迟, 当一个block进行高延迟操作时, 另一个block可以占用GPU资源进行计算. 
+
+## CUDA执行模型  ##
+下图为一个CUDA执行模型框图, 本节将介绍CUDA的SIMT执行模型, 以及它与传统的SIMD模型的区别与联系. 
+## CUDA 新特性   ##
+## thrust库      ##
 ## CUDA profiler ##
 ## CUDA加速程序举例, 及加速比分析 ##
 
+<input type='hidden' id='markdowncodestyle' value='vs'>
