@@ -1,10 +1,10 @@
-# CUDA编程模型综述 #
+# CUDA模型综述 #
 
 * 吕文龙
 * 14210720082
 
 ## 摘要 ##
-介绍了通用GPU编程以及CUDA出现的背景, CUDA C语言语法以及CUDA在GPU上的执行模型. 介绍了最新版本CUDA的一些特性以及基于CUDA的并行计算扩展thrust库. 介绍了用于profile CUDA程序的工具. 并以一个蒙特卡洛算法为例, 展示了GPU编程的加速比.
+本文是一个对CUDA的综述, 首先介绍GPGPU及CUDA出现的背景, 重点介绍CUDA背后的各种模型, 包括编程模型, 内存模型, 硬件模型与指令执行模型. 简要介绍了CUDA C语言扩展以及最新版本的CUDA中的一些新特性, 本综述是建立在我本科的毕业设计所做的一些调研的基础之上.
 
 ## 背景介绍: GPU, GPGPU 与 CUDA
 ### GPU 与 CPU 特性对比 ###
@@ -150,8 +150,9 @@ __global__ void sumReduction(float *sum)
 CUDA的kernel函数被配置为不同block并行执行, 同一个block中的线程需要进行通信与数据共享, 因此一个block会被映射到一个SM上执行, 而block中的每一个线程则被发射到一个SP上执行. 同一个SM中可以有多个活动线程块(active block)以隐藏延迟, 当一个block进行高延迟操作时, 另一个block可以占用GPU资源进行计算. 
 
 ## CUDA执行模型  ##
+
 下图为一个CUDA执行模型框图, 本节将介绍CUDA的SIMT执行模型, 以及它与传统的SIMD模型的区别与联系. 
-<center><img width=640 style='margin:20px' src="./image/KEPLER_GPU.png"></center>
+<center><img width=640 style='margin:20px' src="./image/SIMT.png"></center>
 一个block中的thread, 每32个线程, 会被组织为一个warp. 一个warp内线程的具有相同的指令地址, 但是其中的每个线程拥有自己的指令地址计数器和寄存器状态, 因而能够独立的执行, 并能自由的分支. 
 
 当一个SM中有多个block等待执行时, 每个block中32个连续的线程被分为一个warp, 通过warp scheduler来调度执行. SM中的指令以warp为单位发射, 硬件发射逻辑会计算SM中warp的优先级, 当一条warp中的指令所需的资源都可用, 这条指令就被设为就绪态(ready), 每个GPU周期, 发射逻辑从指令缓冲中选取优先级最高的就绪指令进行发射. 
@@ -166,10 +167,95 @@ CUDA的执行模型被称为SIMT(Single Instruction, Multiple Thread, 单指令�
 
 第二, SIMT模型强调程序员可以为一个warp内的每一个线程灵活地指派不同的分支路径与控制流. 而单纯的SIMD无法为处理同一条指令中不同的条件跳转路径. 然而, 当warp被执行时, 任何时候一个warp内的线程总是在执行相同的指令, CUDA的指令是以warp为单位调度, 发射, 执行的, 同一个warp内的线程总是处于同步状态的, 因此无需使用同步函数显式同步. 如果一个warp内的线程按照不同的分支路径执行, 此时, 一个warp内的每个分支路径都会被执行一次, warp内不在分支路径上的线程, 则会被暂时无效化, 执行时间会是执行多个分支所用的时间之和, 效率可能会受到很大影响. 
 
-因此, 可以这样认为, SIMT模型是对SIMD模型的改进与封装, 使程序员能够更加灵活的的进行编程. 指令在执行时, 仍然是按照SIMD的方式进行执行, 在对CUDA程序进行优化时, 应当注意到这一点. 
-## CUDA 新特性   ##
-## thrust库      ##
-## CUDA profiler ##
-## CUDA加速程序举例, 及加速比分析 ##
+因此, 可以这样认为, SIMT模型是对SIMD模型的改进与封装, 使程序员能够更加灵活的的进行编程. 指令在执行时, 仍然是按照SIMD的方式进行执行, 在对CUDA程序进行优化时, 应当注意到这一点
+
+##  CUDA C语法   ##
+CUDA提供了一个在C/C++子集上的扩展. 以下介绍CUDA C的基本概念.
+
+###  函数类型限定符 ###
+CUDA C的函数包括`host`, `global`, `device` 函数, CUDA C使用函数类型限定符来指明函数属于哪一种函数, 应该运行在何种设备之上, 可以被何种函数所调用. 
+
+* `__device__`表明函数是`device`函数, 只能在设备端执行, 且只能被设备端程序调用.
+* `__global__`声明只能在设备端执行, 且只能从主机端调用的函数. `__global__` 函数的返回类型必须为void
+* `__host__` 函数限定符用于声明在主机端执行, 且只能从主机端调用的函数, 没有限定符修饰的函数, 等同于只有`__host__`限定符修饰的函数.
+
+`__host__` 限定符可以与 `__device__` 限定符一起使用, 此时, 函数将为主机端和设备端分别进行编译. 
+
+### 变量类型限定符      ###
+CUDA C中支持通过变量类型限定符声明变量在GPU中存储的位置: 
+* `__device__` 变量限定符用于声明的变量存在于设备端, 当`__device__`限定符不与其他限定符连用时, 表示变量为存储在全局内存中的全局变量.
+* `__constant__` 变量限定符声明的变量位于常数存储器.
+* `__shared__` 限定符声明的变量位于block内的共享存储器中, 仅可通过block内的所有线程访问. 
+
+### 内置变量与内置类型  ###
+CUDA中也内置了一些向量类型, 用于表示两维或者三维的数据. 例如`dim3`类型, 常用于指定block或则grid在三个维度上的size, 而`unit3`则是三维整数类型, 可以通过`var.x`, `var.y`, `var.z`来索引, 通常用于索引三维线程块或者三维grid中的线程或者线程块. 
+CUDA中定义了一些uint3或者dim3类型的内置变量, 用于表示线程块或grid的尺寸以对block和thread进行索引.
+1.	`gridDim`为`dim3`类型变量, 包含grid在三个维度上的尺寸信息, 可以通过`gridDim.x`/`gridDim.y`/`gridDim.z`来索引
+2.	`blockIdx`为`uint3`类型变量, 包含一个block在grid中的坐标.
+3.	`blockDim`为dim3类型变量, 包含了block在三个维度上的尺寸信息
+4.	`threadIdx`为uint3类型变量, 包含了一个thread在block中各个维度上的坐标.
+5.	`warpSize`为int类型, 用于确定一个warp包含多少个thread.
+### 执行配置            ###
+使用执行配置来确定block中的线程以及grid中的block的维度以及各个维度上的尺寸. 对 `__global__`函数的任何调用都必须指定该调用的执行配置, 以定义在GPU上执行时grid和block各个维度的尺寸信息.
+例如, 如下定义的__global__函数,:
+```c++
+__global__ void MyTest (int* a){
+	/* … */
+}
+```
+可以以如下形式进行调用:
+```
+MyTest<<<Dg,Db,Ns>>>(dev_a);
+```
+其中:
+*   Dg为dim3类型变量, 用于设置grid的维度和各个维度上的尺寸, 设置好Dg后, grid中将会有Dg.x * Dg.y个block, 也可以用int类型进行配置, 此时, block将为一维. 
+*   Db为dim3类型变量, 设置block的维度和各个维度上的尺寸.
+*   Ns为一个`size_t`类型的变量, 用于动态分配共享内存的大小.
+### 线程同步            ###
+CUDA中没有全局线程同步函数, 对于CPU-GPU之间同步, 可以通过`cudaThreadSynchronize()`函数, 该函数使CPU等待GPU上的kernel函数执行完成之后,才继续执行. 对于同一个block内的线程, 可以通过`_syncthreads()`函数进行同步. 
+
+## Dynamic Parallism  ##
+
+Dynamic Parallism 是CUDA 5.0版本开始支持的一项特性, 因此在之前的介绍中没有提到. 在这里简要介绍一下, 因为自己的笔记本电脑GPU计算能力(计算能力类似GPU的版本号, 并非GPU性能度量)过低, 无法支持Dynamic Parallism, 因此以下介绍只是根据查阅资料而来:
+
+之前介绍kernel函数时提到, kernel函数是由CPU端调用, 在GPU上运行, 也就是说, 应当由CPU事先对要计算的数据进行划分, 确定并行方式, 然后调用kernel函数.  然而, 要计算的数据分布往往并不均匀, 因而, 数据集的某些部分计算量大, 而有些部分计算量小, 例如稀疏矩阵. 因而CPU来实现确定如何划分并行网格是很困难的, 而采用均匀网格则会浪费计算能力. 
+
+而支持Dynamic Parallism的GPU则允许从kernel函数内部调用新的kernel 函数, 根据father kernel的计算情况, 动态的为child kernel划分block与thread. 则可以不经由CPU而自适应的划分并行网格. 
+Dynamic Parallism的代码示例如下:
+```c++
+__global__ childKernel(void* data)
+{
+    //operate on data
+}
+__global__ parentKernel(void* data)
+{
+    //... some operation 
+    if(threadIdx.x == 0)
+    {
+        childKernel<<<1,32>>>(data);
+        cudaThreadSynchronize();
+    }
+    __syncthreads();
+}
+int main()
+{
+    //... some operation
+    parentKernel<<<8,32>>>(data);
+    return 0;
+}
+```
+一个形象的图示如下图所示:
+<center><img width=640 style='margin:20px' src="./image/DYNAMIC_PARALLISM.png"></center>
+
+上图是一个流体动力学仿真过程, 支持Dynamic Parallism的GPU, 可以通过仿真运行时的动态结果自适应的重新划分网格, 在不需要大量计算的位置投入较少线程, 而将大量线程投入计算量大的位置. 
+
+Dynamic Parallism之前, kernel函数是无法支持递归的, 而在Dynamic Parallism支持下, kernel函数是可以递归的. 下面的代码是可以支持的
+```c++
+__global__ Recursivekernel(void* data){
+    if(continueRecursion == true)
+        RecursiveKernel<<<64, 16>>>(data);
+}
+```
+## 参考文献 ##
 
 <input type='hidden' id='markdowncodestyle' value='vs'>
